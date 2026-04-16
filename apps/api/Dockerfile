@@ -26,10 +26,11 @@ COPY packages/types/package.json ./packages/types/
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY apps/api/src/db/migrations ./apps/api/dist/db/migrations
 COPY packages/types ./packages/types
 
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["node", "dist/index.js"]

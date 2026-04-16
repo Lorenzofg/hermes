@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
+  <div class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-zinc-700">
@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { DayEntry, Shift } from '@cris/types'
+import type { DayEntry, Shift } from '@hermes/types'
 
 const props = defineProps<{ days: DayEntry[] }>()
 

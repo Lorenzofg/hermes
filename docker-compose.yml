@@ -27,7 +27,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       FRONTEND_URL: ${FRONTEND_URL}
-      PORT: 3001
+      PORT: 3000
     depends_on:
       postgres:
         condition: service_healthy

@@ -3,11 +3,11 @@
 
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-        Analysis #{{ route.params.id }}
+        Timesheet #{{ route.params.id }}
       </h2>
       <div class="flex gap-2">
         <RouterLink
-          to="/analyses"
+          to="/history"
           class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
         >
           Back
@@ -48,9 +48,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
-import ResultTable from '../components/ResultTable.vue'
-import { useTimesheet } from '../composables/useTimesheet'
-import type { AnalyzeTimesheetResponse } from '@cris/types'
+import ResultTable from '../../components/ResultTable.vue'
+import { useTimesheet } from '../../composables/useTimesheet'
+import type { AnalyzeTimesheetResponse } from '@hermes/types'
 
 const route = useRoute()
 const { downloadCsv } = useTimesheet()
@@ -59,7 +59,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get<AnalyzeTimesheetResponse>(`/api/analyses/${route.params.id}`)
+    const { data } = await axios.get<AnalyzeTimesheetResponse>(`/api/timesheet/analyses/${route.params.id}`)
     result.value = data
   } catch {
     result.value = null

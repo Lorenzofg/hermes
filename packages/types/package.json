@@ -1,5 +1,5 @@
 {
-  "name": "@cris/types",
+  "name": "@hermes/types",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",

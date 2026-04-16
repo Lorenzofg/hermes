@@ -125,11 +125,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import UploadZone from '../components/UploadZone.vue'
-import EditableTable from '../components/EditableTable.vue'
-import ResultTable from '../components/ResultTable.vue'
-import { useTimesheet } from '../composables/useTimesheet'
-import type { DayEntry, AnalyzeTimesheetResponse } from '@cris/types'
+import UploadZone from '../../components/UploadZone.vue'
+import EditableTable from '../../components/EditableTable.vue'
+import ResultTable from '../../components/ResultTable.vue'
+import { useTimesheet } from '../../composables/useTimesheet'
+import type { DayEntry, AnalyzeTimesheetResponse } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 

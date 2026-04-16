@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import type { AnalyzeTimesheetResponse, DayEntry } from '@cris/types'
+import type { AnalyzeTimesheetResponse, DayEntry } from '@hermes/types'
 
 export function useTimesheet() {
   const loading = ref(false)
@@ -18,7 +18,7 @@ export function useTimesheet() {
       form.append('file', file)
 
       const { data } = await axios.post<AnalyzeTimesheetResponse & { fileName: string }>(
-        `/api/analyze/preview?provider=${provider}`,
+        `/api/timesheet/preview?provider=${provider}`,
         form,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       )
@@ -43,7 +43,7 @@ export function useTimesheet() {
     error.value = null
 
     try {
-      const { data } = await axios.post<{ analysisId: number; csvContent: string }>('/api/save', {
+      const { data } = await axios.post<{ analysisId: number; csvContent: string }>('/api/timesheet/save', {
         days,
         provider,
         fileName,

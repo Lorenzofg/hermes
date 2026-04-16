@@ -1,11 +1,11 @@
 {
-  "id": "f701b96a-1edd-4edb-8306-6fcefe01a036",
+  "id": "ded3d966-3afe-4cd9-a772-512f4237177a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.analises": {
-      "name": "analises",
+    "public.timesheet_analyses": {
+      "name": "timesheet_analyses",
       "schema": "",
       "columns": {
         "id": {
@@ -28,14 +28,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "nome_arquivo": {
-          "name": "nome_arquivo",
+        "file_name": {
+          "name": "file_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "total_dias": {
-          "name": "total_dias",
+        "total_days": {
+          "name": "total_days",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -46,12 +46,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "avisos": {
-          "name": "avisos",
+        "warnings": {
+          "name": "warnings",
           "type": "text[]",
           "primaryKey": false,
           "notNull": true,
-          "default": []
+          "default": "'{}'"
         }
       },
       "indexes": {},
@@ -59,8 +59,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.dias_ponto": {
-      "name": "dias_ponto",
+    "public.timesheet_records": {
+      "name": "timesheet_records",
       "schema": "",
       "columns": {
         "id": {
@@ -69,97 +69,97 @@
           "primaryKey": true,
           "notNull": true
         },
-        "analise_id": {
-          "name": "analise_id",
+        "analysis_id": {
+          "name": "analysis_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "data": {
-          "name": "data",
+        "date": {
+          "name": "date",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "entrada1": {
-          "name": "entrada1",
+        "clock_in_1": {
+          "name": "clock_in_1",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "saida1": {
-          "name": "saida1",
+        "clock_out_1": {
+          "name": "clock_out_1",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "entrada2": {
-          "name": "entrada2",
+        "clock_in_2": {
+          "name": "clock_in_2",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "saida2": {
-          "name": "saida2",
+        "clock_out_2": {
+          "name": "clock_out_2",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "entrada3": {
-          "name": "entrada3",
+        "clock_in_3": {
+          "name": "clock_in_3",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "saida3": {
-          "name": "saida3",
+        "clock_out_3": {
+          "name": "clock_out_3",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "entrada4": {
-          "name": "entrada4",
+        "clock_in_4": {
+          "name": "clock_in_4",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "saida4": {
-          "name": "saida4",
+        "clock_out_4": {
+          "name": "clock_out_4",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "entrada5": {
-          "name": "entrada5",
+        "clock_in_5": {
+          "name": "clock_in_5",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "saida5": {
-          "name": "saida5",
+        "clock_out_5": {
+          "name": "clock_out_5",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "entrada6": {
-          "name": "entrada6",
+        "clock_in_6": {
+          "name": "clock_in_6",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "''"
         },
-        "saida6": {
-          "name": "saida6",
+        "clock_out_6": {
+          "name": "clock_out_6",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -168,12 +168,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "dias_ponto_analise_id_analises_id_fk": {
-          "name": "dias_ponto_analise_id_analises_id_fk",
-          "tableFrom": "dias_ponto",
-          "tableTo": "analises",
+        "timesheet_records_analysis_id_timesheet_analyses_id_fk": {
+          "name": "timesheet_records_analysis_id_timesheet_analyses_id_fk",
+          "tableFrom": "timesheet_records",
+          "tableTo": "timesheet_analyses",
           "columnsFrom": [
-            "analise_id"
+            "analysis_id"
           ],
           "columnsTo": [
             "id"

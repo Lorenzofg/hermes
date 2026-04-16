@@ -1,1 +1,0 @@
-ALTER TABLE "analises" ALTER COLUMN "avisos" SET DEFAULT '{}';

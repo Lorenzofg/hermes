@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AnalyzeTimesheetResponse } from '@cris/types'
+import type { AnalyzeTimesheetResponse } from '@hermes/types'
 
 defineProps<{
   result: AnalyzeTimesheetResponse
