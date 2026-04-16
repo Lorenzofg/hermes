@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY packages/types ./packages/types
 COPY apps/api ./apps/api
-RUN pnpm --filter @cris/api build
+RUN pnpm --filter @hermes/api build
 
 # ---- runner ----
 FROM node:22-alpine AS runner

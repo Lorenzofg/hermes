@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY packages/types ./packages/types
 COPY apps/web ./apps/web
-RUN pnpm --filter @cris/web build
+RUN pnpm --filter @hermes/web build
 
 # ---- runner (nginx) ----
 FROM nginx:alpine AS runner
