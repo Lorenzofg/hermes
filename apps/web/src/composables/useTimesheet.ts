@@ -5,28 +5,62 @@ import type { AnalyzeTimesheetResponse, DayEntry } from '@hermes/types'
 export function useTimesheet() {
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const progress = ref<{ current: number; total: number } | null>(null)
 
   async function analyzePreview(
     file: File,
     provider: 'claude' | 'gpt',
-  ): Promise<(AnalyzeTimesheetResponse & { fileName: string }) | null> {
+  ): Promise<(AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null> {
     loading.value = true
     error.value = null
+    progress.value = null
 
     try {
       const form = new FormData()
       form.append('file', file)
 
-      const { data } = await axios.post<AnalyzeTimesheetResponse & { fileName: string }>(
-        `/api/timesheet/preview?provider=${provider}`,
-        form,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      )
-      return data
-    } catch (e: unknown) {
-      error.value = axios.isAxiosError(e)
-        ? (e.response?.data?.error ?? 'Failed to analyze the timesheet.')
-        : 'Unexpected error.'
+      const response = await fetch(`/api/timesheet/preview-stream?provider=${provider}`, {
+        method: 'POST',
+        body: form,
+      })
+
+      if (!response.ok || !response.body) {
+        error.value = 'Failed to analyze the timesheet.'
+        return null
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let result: (AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null = null
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const raw = line.slice(6).trim()
+          if (raw === '[DONE]') break
+
+          const event = JSON.parse(raw)
+          if (event.type === 'progress') {
+            progress.value = { current: event.current, total: event.total }
+          } else if (event.type === 'result') {
+            result = event
+          } else if (event.type === 'error') {
+            error.value = event.message
+          }
+        }
+      }
+
+      return result
+    } catch {
+      error.value = 'Failed to analyze the timesheet.'
       return null
     } finally {
       loading.value = false
@@ -38,6 +72,7 @@ export function useTimesheet() {
     provider: 'claude' | 'gpt',
     fileName: string,
     warnings: string[],
+    usage?: { inputTokens: number; outputTokens: number },
   ): Promise<{ analysisId: number; csvContent: string } | null> {
     loading.value = true
     error.value = null
@@ -48,6 +83,8 @@ export function useTimesheet() {
         provider,
         fileName,
         warnings,
+        inputTokens:  usage?.inputTokens ?? 0,
+        outputTokens: usage?.outputTokens ?? 0,
       })
       return data
     } catch (e: unknown) {
@@ -70,5 +107,5 @@ export function useTimesheet() {
     URL.revokeObjectURL(url)
   }
 
-  return { loading, error, analyzePreview, saveAnalysis, downloadCsv }
+  return { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv }
 }

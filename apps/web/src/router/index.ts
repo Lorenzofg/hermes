@@ -7,6 +7,7 @@ const routes = [
   { path: '/timesheet/:id', name: 'timesheet-detail', component: () => import('../views/timesheet/DetailView.vue') },
 
   { path: '/payslip',       name: 'payslip-home',     component: () => import('../views/payslip/HomeView.vue') },
+  { path: '/payslip/:id',   name: 'payslip-detail',   component: () => import('../views/payslip/DetailView.vue') },
 
   { path: '/history',       name: 'history',          component: () => import('../views/HistoryView.vue') },
 ]

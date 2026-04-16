@@ -45,14 +45,16 @@ interface SaveParams {
   days: DayEntry[]
   warnings: string[]
   csvContent: string
+  inputTokens: number
+  outputTokens: number
 }
 
 export async function saveAnalysis(params: SaveParams) {
-  const { provider, fileName, days, warnings, csvContent } = params
+  const { provider, fileName, days, warnings, csvContent, inputTokens, outputTokens } = params
 
   const [record] = await db
     .insert(timesheetAnalyses)
-    .values({ provider, fileName, totalDays: days.length, csvContent, warnings })
+    .values({ provider, fileName, totalDays: days.length, csvContent, warnings, inputTokens, outputTokens })
     .returning()
 
   if (days.length > 0) {

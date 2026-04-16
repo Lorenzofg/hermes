@@ -23,4 +23,6 @@ Rules:
 - Include ALL days on the card, even those with no records
 - Days with no records: shifts = []
 - Warnings MUST be written in Brazilian Portuguese (pt-BR). Note missing punches, suspicious times, corrections, etc.
+- If the document contains no time records, still return the JSON structure with days = [] and a warning explaining why
+- NEVER return plain text or explanations — always return ONLY the JSON object
 `.trim()

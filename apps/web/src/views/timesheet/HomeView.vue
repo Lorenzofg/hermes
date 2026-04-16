@@ -19,11 +19,11 @@
       <UploadZone v-model:file="file" />
 
       <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
-        <div class="space-y-1.5">
+        <div v-if="visibleProviders.length > 1" class="space-y-1.5">
           <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">AI Provider</label>
           <div class="flex rounded-lg border border-zinc-700 overflow-hidden">
             <button
-              v-for="p in providers"
+              v-for="p in visibleProviders"
               :key="p.value"
               class="px-4 py-2 text-xs font-semibold transition-colors"
               :class="provider === p.value
@@ -35,6 +35,7 @@
             </button>
           </div>
         </div>
+        <div v-else />
 
         <button
           :disabled="!file || loading"
@@ -46,6 +47,19 @@
         >
           {{ loading ? 'Analyzing...' : 'Analyze' }}
         </button>
+      </div>
+
+      <!-- Progress -->
+      <div v-if="loading && progress" class="space-y-1.5">
+        <p class="text-xs text-zinc-400">
+          Processing chunk {{ progress.current }} of {{ progress.total }}...
+        </p>
+        <div class="w-full bg-zinc-700 rounded-full h-1.5">
+          <div
+            class="bg-white h-1.5 rounded-full transition-all"
+            :style="{ width: `${(progress.current / progress.total) * 100}%` }"
+          />
+        </div>
       </div>
     </section>
 
@@ -124,21 +138,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
 import ResultTable from '../../components/ResultTable.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
+import { useProviders } from '../../composables/useProviders'
 import type { DayEntry, AnalyzeTimesheetResponse } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 
-const { loading, error, analyzePreview, saveAnalysis, downloadCsv } = useTimesheet()
+const { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv } = useTimesheet()
+const { providers } = useProviders()
 
-const providers = [
+const allProviders = [
   { value: 'claude' as const, label: 'Claude' },
   { value: 'gpt'   as const, label: 'GPT-4o' },
 ]
+const visibleProviders = computed(() =>
+  providers.value ? allProviders.filter((pr) => providers.value![pr.value]) : [],
+)
 
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
@@ -147,6 +166,7 @@ const provider = ref<'claude' | 'gpt'>('claude')
 const editableDays = ref<DayEntry[]>([])
 const warnings = ref<string[]>([])
 const fileName = ref('')
+const usage = ref<{ inputTokens: number; outputTokens: number } | null>(null)
 const savedId = ref<number | null>(null)
 const savedCsv = ref('')
 const finalResult = ref<AnalyzeTimesheetResponse>({
@@ -161,6 +181,7 @@ async function runAnalysis() {
 
   fileName.value = result.fileName
   warnings.value = result.warnings
+  usage.value    = result.usage
   editableDays.value = result.days.map((d) => ({
     date: d.date,
     shifts: [
@@ -173,7 +194,7 @@ async function runAnalysis() {
 }
 
 async function confirmAndSave() {
-  const result = await saveAnalysis(editableDays.value, provider.value, fileName.value, warnings.value)
+  const result = await saveAnalysis(editableDays.value, provider.value, fileName.value, warnings.value, usage.value ?? undefined)
   if (!result) return
 
   savedId.value = result.analysisId
@@ -196,6 +217,7 @@ function reset() {
   fileName.value = ''
   savedId.value = null
   savedCsv.value = ''
+  usage.value = null
   error.value = null
 }
 </script>

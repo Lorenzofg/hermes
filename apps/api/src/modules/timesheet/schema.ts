@@ -1,7 +1,6 @@
-import { pgTable, serial, text, integer, timestamp, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, timestamp, bigint } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
-
-export const providerEnum = pgEnum('provider', ['claude', 'gpt'])
+import { providerEnum } from '../../db/enums'
 
 export const timesheetAnalyses = pgTable('timesheet_analyses', {
   id:         serial('id').primaryKey(),
@@ -10,7 +9,9 @@ export const timesheetAnalyses = pgTable('timesheet_analyses', {
   fileName:   text('file_name').notNull(),
   totalDays:  integer('total_days').notNull(),
   csvContent: text('csv_content').notNull(),
-  warnings:   text('warnings').array().notNull().default(sql`'{}'`),
+  warnings:      text('warnings').array().notNull().default(sql`'{}'`),
+  inputTokens:   bigint('input_tokens', { mode: 'number' }).notNull().default(0),
+  outputTokens:  bigint('output_tokens', { mode: 'number' }).notNull().default(0),
 })
 
 export const timesheetRecords = pgTable('timesheet_records', {

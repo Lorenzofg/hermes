@@ -16,7 +16,7 @@ await app.register(cors, {
 })
 
 await app.register(multipart, {
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
 })
 
 await app.register(timesheetController, { prefix: '/api/timesheet' })
@@ -24,6 +24,10 @@ await app.register(payslipController, { prefix: '/api/payslip' })
 
 app.get('/health', async () => ({ status: 'ok' }))
 app.get('/api/history', async (_req, reply) => reply.send(await getHistory()))
+app.get('/api/providers', async (_req, reply) => reply.send({
+  claude: !!process.env.ANTHROPIC_API_KEY,
+  gpt:    !!process.env.OPENAI_API_KEY,
+}))
 
 const port = Number(process.env.PORT ?? 3000)
 

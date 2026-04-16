@@ -21,6 +21,7 @@
             <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">File</th>
             <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Provider</th>
             <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Summary</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Tokens</th>
             <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Date</th>
             <th class="px-4 py-3"></th>
           </tr>
@@ -42,6 +43,11 @@
             <td class="px-4 py-3 text-zinc-200 text-xs">{{ item.fileName }}</td>
             <td class="px-4 py-3 text-xs text-zinc-400 uppercase tracking-wide">{{ item.provider }}</td>
             <td class="px-4 py-3 text-xs text-zinc-300">{{ item.summary }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-zinc-500 whitespace-nowrap">
+              <span class="text-zinc-400">↑{{ formatTokens(item.inputTokens) }}</span>
+              <span class="mx-1 text-zinc-600">/</span>
+              <span class="text-zinc-400">↓{{ formatTokens(item.outputTokens) }}</span>
+            </td>
             <td class="px-4 py-3 font-mono text-xs text-zinc-400">{{ formatDate(item.createdAt) }}</td>
             <td class="px-4 py-3 text-right">
               <RouterLink
@@ -71,6 +77,8 @@ interface HistoryItem {
   provider: string
   fileName: string
   summary: string
+  inputTokens: number
+  outputTokens: number
   detailPath: string
 }
 
@@ -93,6 +101,11 @@ function formatDate(iso: string): string {
   const date = d.toISOString().slice(0, 10).split('-').reverse().join('/')
   const time = d.toISOString().slice(11, 16)
   return `${date} ${time}`
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
 }
 
 function typeBadge(type: string): string {
