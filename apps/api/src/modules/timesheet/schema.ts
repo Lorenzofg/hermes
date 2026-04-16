@@ -1,6 +1,6 @@
 import { pgTable, serial, text, integer, timestamp, bigint } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
-import { providerEnum } from '../../db/enums'
+import { providerEnum } from '../../db/enums.js'
 
 export const timesheetAnalyses = pgTable('timesheet_analyses', {
   id:         serial('id').primaryKey(),

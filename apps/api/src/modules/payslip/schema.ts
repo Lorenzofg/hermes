@@ -1,6 +1,6 @@
 import { pgTable, serial, integer, text, numeric, timestamp, bigint } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
-import { providerEnum } from '../../db/enums'
+import { providerEnum } from '../../db/enums.js'
 
 // One row per PDF upload
 export const payslipAnalyses = pgTable('payslip_analyses', {
