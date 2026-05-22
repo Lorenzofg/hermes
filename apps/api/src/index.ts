@@ -16,7 +16,7 @@ await app.register(cors, {
 })
 
 await app.register(multipart, {
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024 }, // hard cap; PDF-specific check is in each controller
 })
 
 await app.register(timesheetController, { prefix: '/api/timesheet' })

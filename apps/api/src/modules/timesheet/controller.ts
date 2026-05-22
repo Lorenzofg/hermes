@@ -4,9 +4,11 @@ import { generateCsv, saveAnalysis, listAnalyses, getAnalysis } from './service.
 import { processBatchTimesheet } from './batch-processor.js'
 import { saveBatchAnalysis, listBatchAnalyses, getBatchAnalysis, getBatchPersonCsv } from './batch-service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
+import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import type { AnalyzeTimesheetResponse, BatchPersonResult, DayEntry } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
 
 export async function timesheetController(app: FastifyInstance) {
 
@@ -66,16 +68,20 @@ export async function timesheetController(app: FastifyInstance) {
 
       const fileChunks: Buffer[] = []
       for await (const chunk of file.file) fileChunks.push(chunk)
-      const base64 = Buffer.concat(fileChunks).toString('base64')
+      const buffer = Buffer.concat(fileChunks)
+
+      if (file.mimetype === 'application/pdf' && buffer.length > MAX_PDF_BYTES) {
+        return reply.status(400).send({ error: `PDF too large. Maximum allowed size is ${MAX_PDF_MB} MB.` })
+      }
+
+      const base64   = buffer.toString('base64')
       const fileName = file.filename
       const mimeType = file.mimetype
 
       startSSE(reply)
 
       try {
-        const result = await processTimesheet(base64, mimeType, provider, (current, total) => {
-          sendEvent(reply, { type: 'progress', current, total })
-        })
+        const result = await processTimesheet(base64, mimeType, provider)
 
         const csvContent = generateCsv(result.days)
         sendEvent(reply, {
@@ -149,16 +155,20 @@ export async function timesheetController(app: FastifyInstance) {
 
       const fileChunks: Buffer[] = []
       for await (const chunk of file.file) fileChunks.push(chunk)
-      const base64   = Buffer.concat(fileChunks).toString('base64')
+      const buffer = Buffer.concat(fileChunks)
+
+      if (file.mimetype === 'application/pdf' && buffer.length > MAX_PDF_BYTES) {
+        return reply.status(400).send({ error: `PDF too large. Maximum allowed size is ${MAX_PDF_MB} MB.` })
+      }
+
+      const base64   = buffer.toString('base64')
       const fileName = file.filename
       const mimeType = file.mimetype
 
       startSSE(reply)
 
       try {
-        const result = await processBatchTimesheet(base64, mimeType, provider, (current, total) => {
-          sendEvent(reply, { type: 'progress', current, total })
-        })
+        const result = await processBatchTimesheet(base64, mimeType, provider)
 
         sendEvent(reply, {
           type:     'result',
