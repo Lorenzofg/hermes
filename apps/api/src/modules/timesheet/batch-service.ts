@@ -70,7 +70,25 @@ export async function getBatchAnalysis(id: number) {
 
   const people = await db.select().from(batchTimesheetPeople).where(eq(batchTimesheetPeople.analysisId, id))
 
-  return { ...analysis, people }
+  const peopleWithDays = await Promise.all(
+    people.map(async (person) => {
+      const rows = await db.select().from(batchTimesheetRecords).where(eq(batchTimesheetRecords.personId, person.id))
+      const days = rows.map((r) => ({
+        date: r.date,
+        shifts: [
+          { clockIn: r.clockIn1, clockOut: r.clockOut1 },
+          { clockIn: r.clockIn2, clockOut: r.clockOut2 },
+          { clockIn: r.clockIn3, clockOut: r.clockOut3 },
+          { clockIn: r.clockIn4, clockOut: r.clockOut4 },
+          { clockIn: r.clockIn5, clockOut: r.clockOut5 },
+          { clockIn: r.clockIn6, clockOut: r.clockOut6 },
+        ].filter((s) => s.clockIn || s.clockOut),
+      }))
+      return { ...person, days }
+    }),
+  )
+
+  return { ...analysis, people: peopleWithDays }
 }
 
 export async function getBatchPersonCsv(personId: number) {

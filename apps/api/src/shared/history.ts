@@ -1,5 +1,5 @@
 import { db } from '../db/index.js'
-import { timesheetAnalyses } from '../modules/timesheet/schema.js'
+import { timesheetAnalyses, batchTimesheetAnalyses } from '../modules/timesheet/schema.js'
 import { payslipAnalyses, payslipRecords } from '../modules/payslip/schema.js'
 import { eq, sql } from 'drizzle-orm'
 
@@ -66,6 +66,32 @@ export async function getHistory(): Promise<HistoryItem[]> {
       inputTokens:  r.inputTokens,
       outputTokens: r.outputTokens,
       detailPath:   `/payslip/${r.id}`,
+    })
+  }
+
+  const batches = await db
+    .select({
+      id:           batchTimesheetAnalyses.id,
+      createdAt:    batchTimesheetAnalyses.createdAt,
+      provider:     batchTimesheetAnalyses.provider,
+      fileName:     batchTimesheetAnalyses.fileName,
+      totalPeople:  batchTimesheetAnalyses.totalPeople,
+      inputTokens:  batchTimesheetAnalyses.inputTokens,
+      outputTokens: batchTimesheetAnalyses.outputTokens,
+    })
+    .from(batchTimesheetAnalyses)
+
+  for (const r of batches) {
+    items.push({
+      id:           r.id,
+      type:         'batch',
+      createdAt:    r.createdAt.toISOString(),
+      provider:     r.provider,
+      fileName:     r.fileName,
+      summary:      `${r.totalPeople} pessoa${r.totalPeople !== 1 ? 's' : ''}`,
+      inputTokens:  r.inputTokens,
+      outputTokens: r.outputTokens,
+      detailPath:   `/timesheet-batch/${r.id}`,
     })
   }
 

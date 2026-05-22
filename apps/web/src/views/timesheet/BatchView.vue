@@ -48,19 +48,6 @@
           {{ loading ? 'Analyzing...' : 'Analyze' }}
         </button>
       </div>
-
-      <!-- Progress -->
-      <div v-if="loading && progress" class="space-y-1.5">
-        <p class="text-xs text-zinc-400">
-          Processing chunk {{ progress.current }} of {{ progress.total }}...
-        </p>
-        <div class="w-full bg-zinc-700 rounded-full h-1.5">
-          <div
-            class="bg-white h-1.5 rounded-full transition-all"
-            :style="{ width: `${(progress.current / progress.total) * 100}%` }"
-          />
-        </div>
-      </div>
     </section>
 
     <!-- Error -->
@@ -77,7 +64,7 @@
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
           Step 2 — Review
           <span class="ml-2 text-zinc-600 normal-case tracking-normal font-normal">
-            {{ people.length }} people found
+            {{ editablePeople.length }} people found
           </span>
         </h2>
         <button
@@ -91,25 +78,41 @@
 
       <div class="space-y-3">
         <div
-          v-for="(person, i) in people"
+          v-for="(person, i) in editablePeople"
           :key="i"
-          class="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-2"
+          class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden"
         >
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-semibold text-zinc-200">{{ person.name }}</p>
-            <span class="text-xs text-zinc-500">{{ person.days.length }} days</span>
+          <!-- Person header -->
+          <div
+            class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-700/40 transition-colors"
+            @click="person.expanded = !person.expanded"
+          >
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-semibold text-zinc-200">{{ person.name }}</span>
+              <span class="text-xs text-zinc-500">{{ person.days.length }} days</span>
+              <span
+                v-if="person.warnings.length"
+                class="text-xs text-amber-400"
+              >
+                {{ person.warnings.length }} warning{{ person.warnings.length !== 1 ? 's' : '' }}
+              </span>
+            </div>
+            <span class="text-xs text-zinc-500">{{ person.expanded ? '▲' : '▼' }}</span>
           </div>
 
-          <div
-            v-if="person.warnings.length"
-            class="border border-amber-800 bg-amber-900/20 rounded px-3 py-2"
-          >
-            <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">
-              Warnings ({{ person.warnings.length }})
-            </p>
-            <ul class="space-y-0.5">
-              <li v-for="(w, j) in person.warnings" :key="j" class="text-xs text-amber-400">— {{ w }}</li>
-            </ul>
+          <!-- Expanded content -->
+          <div v-if="person.expanded" class="border-t border-zinc-700 p-4 space-y-3">
+            <div
+              v-if="person.warnings.length"
+              class="border border-amber-800 bg-amber-900/20 rounded px-3 py-2"
+            >
+              <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">Warnings</p>
+              <ul class="space-y-0.5">
+                <li v-for="(w, j) in person.warnings" :key="j" class="text-xs text-amber-400">— {{ w }}</li>
+              </ul>
+            </div>
+
+            <EditableTable v-model:days="person.days" />
           </div>
         </div>
       </div>
@@ -125,12 +128,20 @@
             <p class="text-sm font-semibold text-zinc-200">Batch analysis saved</p>
             <p class="text-xs text-zinc-500 mt-0.5">ID #{{ savedId }} — {{ savedPeople.length }} people</p>
           </div>
-          <button
-            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
-            @click="reset"
-          >
-            New Analysis
-          </button>
+          <div class="flex gap-2">
+            <RouterLink
+              :to="`/timesheet-batch/${savedId}`"
+              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+            >
+              View
+            </RouterLink>
+            <button
+              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+              @click="reset"
+            >
+              New Analysis
+            </button>
+          </div>
         </div>
 
         <div class="space-y-2">
@@ -141,7 +152,7 @@
           >
             <div>
               <p class="text-sm text-zinc-200">{{ person.name }}</p>
-              <p class="text-xs text-zinc-500">{{ person.days.length }} days</p>
+              <p class="text-xs text-zinc-500">{{ person.totalDays }} days</p>
             </div>
             <button
               class="px-3 py-1 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
@@ -159,14 +170,23 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import UploadZone from '../../components/UploadZone.vue'
+import EditableTable from '../../components/EditableTable.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
 import { useProviders } from '../../composables/useProviders'
-import type { BatchPersonResult } from '@hermes/types'
+import type { DayEntry } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 
-const { loading, error, progress, analyzePreview, saveAnalysis, downloadPersonCsv } = useBatchTimesheet()
+interface EditablePerson {
+  name: string
+  days: DayEntry[]
+  warnings: string[]
+  expanded: boolean
+}
+
+const { loading, error, analyzePreview, saveAnalysis, downloadPersonCsv } = useBatchTimesheet()
 const { providers } = useProviders()
 
 const allProviders = [
@@ -180,12 +200,12 @@ const visibleProviders = computed(() =>
 const step     = ref<Step>('upload')
 const file     = ref<File | null>(null)
 const provider = ref<'claude' | 'gpt'>('claude')
-const people   = ref<BatchPersonResult[]>([])
 const fileName = ref('')
 const usage    = ref<{ inputTokens: number; outputTokens: number } | null>(null)
 
-const savedId     = ref<number | null>(null)
-const savedPeople = ref<{ name: string; days: BatchPersonResult['days']; personId: number }[]>([])
+const editablePeople = ref<EditablePerson[]>([])
+const savedId        = ref<number | null>(null)
+const savedPeople    = ref<{ name: string; totalDays: number; personId: number }[]>([])
 
 async function runAnalysis() {
   if (!file.value) return
@@ -193,42 +213,51 @@ async function runAnalysis() {
   const result = await analyzePreview(file.value, provider.value)
   if (!result) return
 
-  people.value   = result.people
   fileName.value = result.fileName
   usage.value    = result.usage
-  step.value     = 'review'
+  editablePeople.value = result.people.map((p) => ({
+    name:     p.name,
+    days:     p.days.map((d) => ({
+      date:   d.date,
+      shifts: [...d.shifts, ...Array.from({ length: Math.max(0, 6 - d.shifts.length) }, () => ({ clockIn: '', clockOut: '' }))].slice(0, 6),
+    })),
+    warnings: p.warnings,
+    expanded: false,
+  }))
+
+  step.value = 'review'
 }
 
 async function confirmAndSave() {
-  const result = await saveAnalysis(people.value, provider.value, fileName.value, usage.value ?? undefined)
+  const people = editablePeople.value.map(({ name, days, warnings }) => ({ name, days, warnings }))
+  const result = await saveAnalysis(people, provider.value, fileName.value, usage.value ?? undefined)
   if (!result) return
 
   savedId.value = result.analysisId
 
-  // Fetch the saved analysis to get person IDs for CSV downloads
   try {
-    const res = await fetch(`/api/timesheet/batch-analyses/${result.analysisId}`)
+    const res  = await fetch(`/api/timesheet/batch-analyses/${result.analysisId}`)
     const data = await res.json()
     savedPeople.value = data.people.map((p: any) => ({
-      name:     p.personName,
-      days:     [],
-      personId: p.id,
+      name:      p.personName,
+      totalDays: p.totalDays,
+      personId:  p.id,
     }))
   } catch {
-    savedPeople.value = people.value.map((p, i) => ({ name: p.name, days: p.days, personId: i }))
+    savedPeople.value = editablePeople.value.map((p, i) => ({ name: p.name, totalDays: p.days.length, personId: i }))
   }
 
   step.value = 'saved'
 }
 
 function reset() {
-  step.value     = 'upload'
-  file.value     = null
-  people.value   = []
-  fileName.value = ''
-  usage.value    = null
-  savedId.value  = null
+  step.value        = 'upload'
+  file.value        = null
+  editablePeople.value = []
+  fileName.value    = ''
+  usage.value       = null
+  savedId.value     = null
   savedPeople.value = []
-  error.value    = null
+  error.value       = null
 }
 </script>

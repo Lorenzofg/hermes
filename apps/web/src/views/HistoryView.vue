@@ -84,6 +84,7 @@ interface HistoryItem {
 
 const TYPE_BADGE: Record<string, string> = {
   timesheet: 'bg-blue-900/50 text-blue-300',
+  batch:     'bg-violet-900/50 text-violet-300',
   payslip:   'bg-emerald-900/50 text-emerald-300',
 }
 
