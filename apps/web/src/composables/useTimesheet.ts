@@ -25,7 +25,8 @@ export function useTimesheet() {
       })
 
       if (!response.ok || !response.body) {
-        error.value = 'Failed to analyze the timesheet.'
+        const body = await response.text().catch(() => '')
+        error.value = `Request failed: ${response.status} ${response.statusText}${body ? ` — ${body}` : ''}`
         return null
       }
 
@@ -59,8 +60,8 @@ export function useTimesheet() {
       }
 
       return result
-    } catch {
-      error.value = 'Failed to analyze the timesheet.'
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
       return null
     } finally {
       loading.value = false
