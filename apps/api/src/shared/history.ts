@@ -1,5 +1,6 @@
 import { db } from '../db/index.js'
-import { timesheetAnalyses, batchTimesheetAnalyses } from '../modules/timesheet/schema.js'
+import { timesheetAnalyses } from '../modules/timesheet/schema.js'
+import { batchTimesheetAnalyses } from '../modules/timesheet-batch/schema.js'
 import { payslipAnalyses, payslipRecords } from '../modules/payslip/schema.js'
 import { eq, sql } from 'drizzle-orm'
 

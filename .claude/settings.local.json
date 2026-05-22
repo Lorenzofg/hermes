@@ -3,7 +3,8 @@
     "allow": [
       "WebSearch",
       "Bash(find /mnt/c/Users/admin/Projects/hermes -maxdepth 2 -name \"README.md\" -o -name \"CLAUDE.md\" 2>/dev/null | head -20)",
-      "Read(//mnt/c/Users/admin/Projects/**)"
+      "Read(//mnt/c/Users/admin/Projects/**)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\admin\\\\Projects\\\\hermes\\\\apps\\\\api\\\\src\\\\modules\\\\timesheet\\\\batch-prompt.ts\", \"c:\\\\Users\\\\admin\\\\Projects\\\\hermes\\\\apps\\\\api\\\\src\\\\modules\\\\timesheet\\\\batch-processor.ts\", \"c:\\\\Users\\\\admin\\\\Projects\\\\hermes\\\\apps\\\\api\\\\src\\\\modules\\\\timesheet\\\\batch-service.ts\", \"c:\\\\Users\\\\admin\\\\Projects\\\\hermes\\\\apps\\\\web\\\\src\\\\views\\\\timesheet\\\\BatchView.vue\", \"c:\\\\Users\\\\admin\\\\Projects\\\\hermes\\\\apps\\\\web\\\\src\\\\views\\\\timesheet\\\\BatchDetailView.vue\")"
     ]
   }
 }

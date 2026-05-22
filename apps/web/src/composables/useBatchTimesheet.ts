@@ -19,7 +19,7 @@ export function useBatchTimesheet() {
       const form = new FormData()
       form.append('file', file)
 
-      const response = await fetch(`/api/timesheet/batch-preview-stream?provider=${provider}`, {
+      const response = await fetch(`/api/timesheet-batch/preview-stream?provider=${provider}`, {
         method: 'POST',
         body: form,
       })
@@ -78,7 +78,7 @@ export function useBatchTimesheet() {
     error.value   = null
 
     try {
-      const { data } = await axios.post<{ analysisId: number; totalPeople: number }>('/api/timesheet/batch-save', {
+      const { data } = await axios.post<{ analysisId: number; totalPeople: number }>('/api/timesheet-batch/save', {
         people,
         provider,
         fileName,
@@ -99,7 +99,7 @@ export function useBatchTimesheet() {
   function downloadPersonCsv(analysisId: number, personId: number, personName: string) {
     const safeName = personName.replace(/[^a-zA-Z0-9_\-]/g, '_')
     const link = document.createElement('a')
-    link.href = `/api/timesheet/batch-analyses/${analysisId}/people/${personId}/csv`
+    link.href = `/api/timesheet-batch/analyses/${analysisId}/people/${personId}/csv`
     link.download = `timesheet_${safeName}_pjecalc.csv`
     link.click()
   }

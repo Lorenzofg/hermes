@@ -1,5 +1,5 @@
 import { callClaude, callGpt, type TokenUsage } from '../../shared/ai.js'
-import { BATCH_TIMESHEET_PROMPT } from './batch-prompt.js'
+import { BATCH_TIMESHEET_PROMPT } from './prompt.js'
 import type { BatchPersonResult } from '@hermes/types'
 
 interface RawResult {

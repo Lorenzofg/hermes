@@ -3,6 +3,7 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import { timesheetController } from './modules/timesheet/controller.js'
+import { timesheetBatchController } from './modules/timesheet-batch/controller.js'
 import { payslipController } from './modules/payslip/controller.js'
 import { runMigrations } from './db/migrate.js'
 import { getHistory } from './shared/history.js'
@@ -19,8 +20,9 @@ await app.register(multipart, {
   limits: { fileSize: 25 * 1024 * 1024 }, // hard cap; PDF-specific check is in each controller
 })
 
-await app.register(timesheetController, { prefix: '/api/timesheet' })
-await app.register(payslipController, { prefix: '/api/payslip' })
+await app.register(timesheetController,      { prefix: '/api/timesheet' })
+await app.register(timesheetBatchController, { prefix: '/api/timesheet-batch' })
+await app.register(payslipController,        { prefix: '/api/payslip' })
 
 app.get('/health', async () => ({ status: 'ok' }))
 app.get('/api/history', async (_req, reply) => reply.send(await getHistory()))

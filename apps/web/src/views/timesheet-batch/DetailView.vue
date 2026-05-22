@@ -40,7 +40,7 @@
             </div>
             <div class="flex items-center gap-3">
               <a
-                :href="`/api/timesheet/batch-analyses/${route.params.id}/people/${person.id}/csv`"
+                :href="`/api/timesheet-batch/analyses/${route.params.id}/people/${person.id}/csv`"
                 :download="`timesheet_${person.personName.replace(/[^a-zA-Z0-9_-]/g, '_')}_pjecalc.csv`"
                 class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
                 @click.stop
@@ -102,7 +102,7 @@ const expanded = ref<Set<number>>(new Set())
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get<BatchAnalysis>(`/api/timesheet/batch-analyses/${route.params.id}`)
+    const { data } = await axios.get<BatchAnalysis>(`/api/timesheet-batch/analyses/${route.params.id}`)
     analysis.value = data
   } catch {
     analysis.value = null

@@ -82,7 +82,6 @@
           :key="i"
           class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden"
         >
-          <!-- Person header -->
           <div
             class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-700/40 transition-colors"
             @click="person.expanded = !person.expanded"
@@ -90,17 +89,13 @@
             <div class="flex items-center gap-3">
               <span class="text-sm font-semibold text-zinc-200">{{ person.name }}</span>
               <span class="text-xs text-zinc-500">{{ person.days.length }} days</span>
-              <span
-                v-if="person.warnings.length"
-                class="text-xs text-amber-400"
-              >
+              <span v-if="person.warnings.length" class="text-xs text-amber-400">
                 {{ person.warnings.length }} warning{{ person.warnings.length !== 1 ? 's' : '' }}
               </span>
             </div>
             <span class="text-xs text-zinc-500">{{ person.expanded ? '▲' : '▼' }}</span>
           </div>
 
-          <!-- Expanded content -->
           <div v-if="person.expanded" class="border-t border-zinc-700 p-4 space-y-3">
             <div
               v-if="person.warnings.length"
@@ -111,7 +106,6 @@
                 <li v-for="(w, j) in person.warnings" :key="j" class="text-xs text-amber-400">— {{ w }}</li>
               </ul>
             </div>
-
             <EditableTable v-model:days="person.days" />
           </div>
         </div>
@@ -236,7 +230,7 @@ async function confirmAndSave() {
   savedId.value = result.analysisId
 
   try {
-    const res  = await fetch(`/api/timesheet/batch-analyses/${result.analysisId}`)
+    const res  = await fetch(`/api/timesheet-batch/analyses/${result.analysisId}`)
     const data = await res.json()
     savedPeople.value = data.people.map((p: any) => ({
       name:      p.personName,
@@ -251,13 +245,13 @@ async function confirmAndSave() {
 }
 
 function reset() {
-  step.value        = 'upload'
-  file.value        = null
+  step.value           = 'upload'
+  file.value           = null
   editablePeople.value = []
-  fileName.value    = ''
-  usage.value       = null
-  savedId.value     = null
-  savedPeople.value = []
-  error.value       = null
+  fileName.value       = ''
+  usage.value          = null
+  savedId.value        = null
+  savedPeople.value    = []
+  error.value          = null
 }
 </script>

@@ -1,7 +1,7 @@
 import { db } from '../../db/index.js'
 import { batchTimesheetAnalyses, batchTimesheetPeople, batchTimesheetRecords } from './schema.js'
 import { eq } from 'drizzle-orm'
-import { generateCsv } from './service.js'
+import { generateCsv } from '../timesheet/service.js'
 import type { BatchPersonResult } from '@hermes/types'
 
 interface SaveBatchParams {
