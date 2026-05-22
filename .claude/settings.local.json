@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(find /mnt/c/Users/admin/Projects/hermes -maxdepth 2 -name \"README.md\" -o -name \"CLAUDE.md\" 2>/dev/null | head -20)",
+      "Read(//mnt/c/Users/admin/Projects/**)"
     ]
   }
 }

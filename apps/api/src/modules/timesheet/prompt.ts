@@ -1,6 +1,6 @@
 export const TIMESHEET_PROMPT = `
 You are an expert at reading Brazilian labor time cards (cartão de ponto).
-Analyze the provided image and extract ALL time records.
+Analyze the provided document (which may be a multi-page PDF or an image) and extract ALL time records from EVERY page.
 
 Return ONLY valid JSON with the structure below — no markdown, no explanation:
 {
@@ -16,11 +16,12 @@ Return ONLY valid JSON with the structure below — no markdown, no explanation:
 }
 
 Rules:
+- Process ALL pages of the document — do not stop after the first page
 - Maximum 6 shifts per day
 - Times in 24h HH:mm format, e.g. "08:00", "17:30"
 - Dates in dd/MM/yyyy format, e.g. "01/03/2024"
 - If a field is illegible, use empty string ""
-- Include ALL days on the card, even those with no records
+- Include ALL days found across all pages, even those with no records
 - Days with no records: shifts = []
 - Warnings MUST be written in Brazilian Portuguese (pt-BR). Note missing punches, suspicious times, corrections, etc.
 - If the document contains no time records, still return the JSON structure with days = [] and a warning explaining why
