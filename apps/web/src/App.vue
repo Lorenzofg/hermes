@@ -14,9 +14,16 @@
           <RouterLink
             to="/timesheet"
             class="text-xs font-medium tracking-wide uppercase transition-colors"
-            :class="$route.path.startsWith('/timesheet') ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
+            :class="$route.path === '/timesheet' || $route.path.startsWith('/timesheet/') ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Timesheet
+          </RouterLink>
+          <RouterLink
+            to="/timesheet-batch"
+            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            :class="$route.path === '/timesheet-batch' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
+          >
+            Batch
           </RouterLink>
           <RouterLink
             to="/payslip"

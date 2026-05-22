@@ -25,6 +25,19 @@ export interface PjeCalcRow {
   clockIn6: string;  clockOut6: string
 }
 
+// Batch timesheet types
+export interface BatchPersonResult {
+  name: string
+  days: DayEntry[]
+  warnings: string[]
+}
+
+export interface AnalyzeBatchTimesheetResponse {
+  people: BatchPersonResult[]
+  fileName: string
+  usage: { inputTokens: number; outputTokens: number }
+}
+
 // Payslip types
 export interface PayslipEarning {
   description: string

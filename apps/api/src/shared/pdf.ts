@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib'
 
-const CHUNK_SIZE = 20 // pages per chunk
+const CHUNK_SIZE = 10 // pages per chunk
 
 export async function splitPdfIntoChunks(pdfBase64: string): Promise<string[]> {
   const pdfBytes = Buffer.from(pdfBase64, 'base64')
