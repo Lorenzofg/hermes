@@ -2,14 +2,21 @@ import { PDFDocument } from 'pdf-lib'
 
 const CHUNK_SIZE = 20 // pages per chunk
 
-/**
- * Splits a PDF buffer into chunks of CHUNK_SIZE pages.
- * Returns each chunk as a base64 string ready for the AI.
- */
 export async function splitPdfIntoChunks(pdfBase64: string): Promise<string[]> {
   const pdfBytes = Buffer.from(pdfBase64, 'base64')
-  const srcDoc = await PDFDocument.load(pdfBytes)
+
+  let srcDoc: PDFDocument
+  try {
+    srcDoc = await PDFDocument.load(pdfBytes, { throwOnInvalidObject: false })
+  } catch {
+    // PDF cannot be parsed by pdf-lib — send as-is and let the AI handle it
+    return [pdfBase64]
+  }
+
   const totalPages = srcDoc.getPageCount()
+
+  // No splitting needed — avoid re-encoding and potential pdf-lib issues
+  if (totalPages <= CHUNK_SIZE) return [pdfBase64]
 
   const chunks: string[] = []
 
