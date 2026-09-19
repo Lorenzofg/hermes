@@ -52,7 +52,7 @@
       <!-- Progress -->
       <div v-if="loading && progress" class="space-y-1.5">
         <p class="text-xs text-zinc-400">
-          Processing chunk {{ progress.current }} of {{ progress.total }}...
+          Processing page {{ progress.current }} of {{ progress.total }}...
         </p>
         <div class="w-full bg-zinc-700 rounded-full h-1.5">
           <div
@@ -72,7 +72,7 @@
     </div>
 
     <!-- Step 2: Review -->
-    <section v-if="step === 'review' && currentPayslip" class="space-y-4">
+    <section v-if="step === 'review'" class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
           Step 2 — Review
@@ -81,6 +81,7 @@
           </span>
         </h2>
         <button
+          v-if="currentPayslip"
           :disabled="loading"
           class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
           @click="confirmAndSave"
@@ -101,6 +102,19 @@
         </ul>
       </div>
 
+      <div
+        v-if="pageErrors.length"
+        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
+      >
+        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
+          Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)
+        </p>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
+        </div>
+      </div>
+
       <!-- Pagination if multiple payslips -->
       <div v-if="payslips.length > 1" class="flex items-center gap-2">
         <button
@@ -114,7 +128,10 @@
         </button>
       </div>
 
-      <PayslipCard :payslip="currentPayslip" />
+      <p v-if="!currentPayslip" class="text-sm text-zinc-500">
+        No payslip could be extracted from this document. Check the errors/warnings above, or start over with a different file.
+      </p>
+      <PayslipCard v-else :payslip="currentPayslip" />
     </section>
 
     <!-- Step 3: Saved -->
@@ -150,7 +167,7 @@ import UploadZone from '../../components/UploadZone.vue'
 import PayslipCard from '../../components/PayslipCard.vue'
 import { usePayslip } from '../../composables/usePayslip'
 import { useProviders } from '../../composables/useProviders'
-import type { Payslip } from '@hermes/types'
+import type { Payslip, PageLogEntry } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 
@@ -159,17 +176,19 @@ const { providers } = useProviders()
 
 const allProviders = [
   { value: 'claude' as const, label: 'Claude' },
-  { value: 'gpt'   as const, label: 'GPT-4o' },
+  { value: 'gpt'   as const, label: 'GPT' },
 ]
 const visibleProviders = computed(() =>
   providers.value ? allProviders.filter((pr) => providers.value![pr.value]) : [],
 )
+const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
 
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
 const provider = ref<'claude' | 'gpt'>('claude')
 const payslips = ref<Payslip[]>([])
 const warnings = ref<string[]>([])
+const pageLog = ref<PageLogEntry[]>([])
 const fileName = ref('')
 const savedId = ref<number | null>(null)
 const currentIndex = ref(0)
@@ -185,6 +204,7 @@ async function runAnalysis() {
 
   payslips.value = result.payslips
   warnings.value = result.warnings
+  pageLog.value  = result.pageLog
   fileName.value = result.fileName
   usage.value    = result.usage
   currentIndex.value = 0
@@ -192,7 +212,7 @@ async function runAnalysis() {
 }
 
 async function confirmAndSave() {
-  const result = await saveAnalysis(payslips.value, warnings.value, provider.value, fileName.value, usage.value ?? undefined)
+  const result = await saveAnalysis(payslips.value, warnings.value, provider.value, fileName.value, usage.value ?? undefined, pageLog.value)
   if (!result) return
 
   savedId.value = result.analysisId
@@ -204,6 +224,7 @@ function reset() {
   file.value = null
   payslips.value = []
   warnings.value = []
+  pageLog.value = []
   fileName.value = ''
   savedId.value = null
   usage.value = null

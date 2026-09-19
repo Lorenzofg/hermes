@@ -1,10 +1,11 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import type { Payslip } from '@hermes/types'
+import type { Payslip, PageLogEntry } from '@hermes/types'
 
 interface PreviewResponse {
   payslips: Payslip[]
   warnings: string[]
+  pageLog: PageLogEntry[]
   usage: { inputTokens: number; outputTokens: number }
   fileName: string
 }
@@ -80,6 +81,7 @@ export function usePayslip() {
     provider: 'claude' | 'gpt',
     fileName: string,
     usage?: { inputTokens: number; outputTokens: number },
+    pageLog?: PageLogEntry[],
   ): Promise<{ analysisId: number } | null> {
     loading.value = true
     error.value = null
@@ -88,6 +90,7 @@ export function usePayslip() {
       const { data } = await axios.post<{ analysisId: number }>('/api/payslip/save', {
         payslips,
         warnings,
+        pageLog: pageLog ?? [],
         provider,
         fileName,
         inputTokens:  usage?.inputTokens ?? 0,

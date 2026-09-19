@@ -48,6 +48,19 @@
           {{ loading ? 'Analyzing...' : 'Analyze' }}
         </button>
       </div>
+
+      <!-- Progress -->
+      <div v-if="loading && progress" class="space-y-1.5">
+        <p class="text-xs text-zinc-400">
+          Processing page {{ progress.current }} of {{ progress.total }}...
+        </p>
+        <div class="w-full bg-zinc-700 rounded-full h-1.5">
+          <div
+            class="bg-white h-1.5 rounded-full transition-all"
+            :style="{ width: `${(progress.current / progress.total) * 100}%` }"
+          />
+        </div>
+      </div>
     </section>
 
     <!-- Error -->
@@ -74,6 +87,19 @@
         >
           {{ loading ? 'Saving...' : 'Confirm & Save' }}
         </button>
+      </div>
+
+      <div
+        v-if="pageErrors.length"
+        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
+      >
+        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
+          Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)
+        </p>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
+        </div>
       </div>
 
       <div class="space-y-3">
@@ -169,7 +195,7 @@ import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
 import { useProviders } from '../../composables/useProviders'
-import type { DayEntry } from '@hermes/types'
+import type { DayEntry, PageLogEntry } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 
@@ -180,22 +206,24 @@ interface EditablePerson {
   expanded: boolean
 }
 
-const { loading, error, analyzePreview, saveAnalysis, downloadPersonCsv } = useBatchTimesheet()
+const { loading, error, progress, analyzePreview, saveAnalysis, downloadPersonCsv } = useBatchTimesheet()
 const { providers } = useProviders()
 
 const allProviders = [
   { value: 'claude' as const, label: 'Claude' },
-  { value: 'gpt'   as const, label: 'GPT-4o' },
+  { value: 'gpt'   as const, label: 'GPT' },
 ]
 const visibleProviders = computed(() =>
   providers.value ? allProviders.filter((pr) => providers.value![pr.value]) : [],
 )
+const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
 
 const step     = ref<Step>('upload')
 const file     = ref<File | null>(null)
 const provider = ref<'claude' | 'gpt'>('claude')
 const fileName = ref('')
 const usage    = ref<{ inputTokens: number; outputTokens: number } | null>(null)
+const pageLog  = ref<PageLogEntry[]>([])
 
 const editablePeople = ref<EditablePerson[]>([])
 const savedId        = ref<number | null>(null)
@@ -209,6 +237,7 @@ async function runAnalysis() {
 
   fileName.value = result.fileName
   usage.value    = result.usage
+  pageLog.value  = result.pageLog
   editablePeople.value = result.people.map((p) => ({
     name:     p.name,
     days:     p.days.map((d) => ({
@@ -224,7 +253,7 @@ async function runAnalysis() {
 
 async function confirmAndSave() {
   const people = editablePeople.value.map(({ name, days, warnings }) => ({ name, days, warnings }))
-  const result = await saveAnalysis(people, provider.value, fileName.value, usage.value ?? undefined)
+  const result = await saveAnalysis(people, provider.value, fileName.value, usage.value ?? undefined, pageLog.value)
   if (!result) return
 
   savedId.value = result.analysisId
@@ -250,6 +279,7 @@ function reset() {
   editablePeople.value = []
   fileName.value       = ''
   usage.value          = null
+  pageLog.value        = []
   savedId.value        = null
   savedPeople.value    = []
   error.value          = null

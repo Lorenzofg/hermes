@@ -1,5 +1,6 @@
-import { callClaude, callGpt, type TokenUsage } from '../../shared/ai.js'
+import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { TIMESHEET_PROMPT } from './prompt.js'
+import type { TokenUsage } from '../../shared/ai.js'
 import type { DayEntry } from '@hermes/types'
 
 interface RawResult {
@@ -11,28 +12,35 @@ export interface ProcessResult {
   days: DayEntry[]
   warnings: string[]
   usage: TokenUsage
+  pageLog: PageLogEntry[]
 }
 
 export async function processTimesheet(
   fileBase64: string,
   mimeType: string,
   provider: 'claude' | 'gpt',
+  onProgress?: (current: number, total: number) => void,
 ): Promise<ProcessResult> {
-  const isPdf = mimeType === 'application/pdf'
-
-  const result =
-    provider === 'gpt'
-      ? await callGpt<RawResult>(TIMESHEET_PROMPT, fileBase64, mimeType)
-      : await callClaude<RawResult>(TIMESHEET_PROMPT, fileBase64, isPdf ? 'application/pdf' : mimeType)
-
-  const days = result.data.days ?? []
+  const { pages, usage, pageLog } = await analyzeByPage<RawResult>(
+    fileBase64,
+    mimeType,
+    TIMESHEET_PROMPT,
+    provider,
+    onProgress,
+  )
 
   const dayMap = new Map<string, DayEntry>()
-  for (const day of days) dayMap.set(day.date, day)
+  const warnings: string[] = []
+
+  for (const { data } of pages) {
+    for (const day of data.days ?? []) dayMap.set(day.date, day)
+    warnings.push(...(data.warnings ?? []))
+  }
 
   return {
-    days:     Array.from(dayMap.values()),
-    warnings: result.data.warnings ?? [],
-    usage:    result.usage,
+    days: Array.from(dayMap.values()),
+    warnings,
+    usage,
+    pageLog,
   }
 }

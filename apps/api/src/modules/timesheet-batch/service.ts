@@ -2,22 +2,23 @@ import { db } from '../../db/index.js'
 import { batchTimesheetAnalyses, batchTimesheetPeople, batchTimesheetRecords } from './schema.js'
 import { eq } from 'drizzle-orm'
 import { generateCsv } from '../timesheet/service.js'
-import type { BatchPersonResult } from '@hermes/types'
+import type { BatchPersonResult, PageLogEntry } from '@hermes/types'
 
 interface SaveBatchParams {
   provider: 'claude' | 'gpt'
   fileName: string
   people: BatchPersonResult[]
+  pageLog: PageLogEntry[]
   inputTokens: number
   outputTokens: number
 }
 
 export async function saveBatchAnalysis(params: SaveBatchParams) {
-  const { provider, fileName, people, inputTokens, outputTokens } = params
+  const { provider, fileName, people, pageLog, inputTokens, outputTokens } = params
 
   const [analysis] = await db
     .insert(batchTimesheetAnalyses)
-    .values({ provider, fileName, totalPeople: people.length, inputTokens, outputTokens })
+    .values({ provider, fileName, totalPeople: people.length, pageLog, inputTokens, outputTokens })
     .returning()
 
   for (const person of people) {

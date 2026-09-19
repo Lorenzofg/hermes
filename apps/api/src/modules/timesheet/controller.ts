@@ -3,7 +3,7 @@ import { processTimesheet } from './processor.js'
 import { generateCsv, saveAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
-import type { AnalyzeTimesheetResponse, DayEntry } from '@hermes/types'
+import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
@@ -39,6 +39,7 @@ export async function timesheetController(app: FastifyInstance) {
         csvContent,
         totalDays: result.days.length,
         warnings:  result.warnings,
+        pageLog:   result.pageLog,
         fileName:  file.filename,
         usage:     result.usage,
       }
@@ -79,7 +80,9 @@ export async function timesheetController(app: FastifyInstance) {
       startSSE(reply)
 
       try {
-        const result = await processTimesheet(base64, mimeType, provider)
+        const result = await processTimesheet(base64, mimeType, provider, (current, total) => {
+          sendEvent(reply, { type: 'progress', current, total })
+        })
         const csvContent = generateCsv(result.days)
         sendEvent(reply, {
           type: 'result',
@@ -87,6 +90,7 @@ export async function timesheetController(app: FastifyInstance) {
           csvContent,
           totalDays: result.days.length,
           warnings:  result.warnings,
+          pageLog:   result.pageLog,
           fileName,
           usage:     result.usage,
         })
@@ -99,17 +103,17 @@ export async function timesheetController(app: FastifyInstance) {
   )
 
   // POST /api/timesheet/save
-  app.post<{ Body: { days: DayEntry[]; provider: 'claude' | 'gpt'; fileName: string; warnings: string[]; inputTokens?: number; outputTokens?: number } }>(
+  app.post<{ Body: { days: DayEntry[]; provider: 'claude' | 'gpt'; fileName: string; warnings: string[]; pageLog?: PageLogEntry[]; inputTokens?: number; outputTokens?: number } }>(
     '/save',
     async (request, reply) => {
-      const { days, provider, fileName, warnings, inputTokens = 0, outputTokens = 0 } = request.body
+      const { days, provider, fileName, warnings, pageLog = [], inputTokens = 0, outputTokens = 0 } = request.body
 
       if (!days || !Array.isArray(days) || days.length === 0) {
         return reply.status(400).send({ error: 'No days provided.' })
       }
 
       const csvContent = generateCsv(days)
-      const record = await saveAnalysis({ provider, fileName, days, warnings, csvContent, inputTokens, outputTokens })
+      const record = await saveAnalysis({ provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens })
 
       return reply.status(201).send({ analysisId: record.id, csvContent })
     },

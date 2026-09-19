@@ -1,6 +1,7 @@
-import { pgTable, serial, text, integer, timestamp, bigint } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, timestamp, bigint, jsonb } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import { providerEnum } from '../../db/enums.js'
+import type { PageLogEntry } from '@hermes/types'
 
 export const batchTimesheetAnalyses = pgTable('batch_timesheet_analyses', {
   id:           serial('id').primaryKey(),
@@ -8,6 +9,7 @@ export const batchTimesheetAnalyses = pgTable('batch_timesheet_analyses', {
   provider:     providerEnum('provider').notNull(),
   fileName:     text('file_name').notNull(),
   totalPeople:  integer('total_people').notNull(),
+  pageLog:      jsonb('page_log').$type<PageLogEntry[]>().notNull().default(sql`'[]'`),
   inputTokens:  bigint('input_tokens', { mode: 'number' }).notNull().default(0),
   outputTokens: bigint('output_tokens', { mode: 'number' }).notNull().default(0),
 })

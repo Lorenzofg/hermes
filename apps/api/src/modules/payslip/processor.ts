@@ -1,5 +1,6 @@
-import { callClaude, callGpt, type TokenUsage } from '../../shared/ai.js'
+import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { PAYSLIP_PROMPT } from './prompt.js'
+import type { TokenUsage } from '../../shared/ai.js'
 import type { Payslip } from '@hermes/types'
 
 interface AIPayslipResponse {
@@ -11,38 +12,39 @@ interface ProcessResult {
   payslips: Payslip[]
   warnings: string[]
   usage: TokenUsage
+  pageLog: PageLogEntry[]
 }
 
 export async function processPayslip(
   fileBase64: string,
   mimeType: string,
   provider: 'claude' | 'gpt',
+  onProgress?: (current: number, total: number) => void,
 ): Promise<ProcessResult> {
-  const isPdf = mimeType === 'application/pdf'
+  const { pages, usage, pageLog } = await analyzeByPage<AIPayslipResponse>(
+    fileBase64,
+    mimeType,
+    PAYSLIP_PROMPT,
+    provider,
+    onProgress,
+  )
 
-  const result =
-    provider === 'gpt'
-      ? await callGpt<AIPayslipResponse>(PAYSLIP_PROMPT, fileBase64, mimeType)
-      : await callClaude<AIPayslipResponse>(PAYSLIP_PROMPT, fileBase64, isPdf ? 'application/pdf' : mimeType)
+  const payslips: Payslip[] = []
+  const warnings: string[] = []
 
-  const raw = result.data as any
-
-  let payslips: Payslip[]
-  let warnings: string[]
-
-  if (Array.isArray(raw)) {
-    payslips = raw.flatMap((item: any) =>
-      Array.isArray(item.payslips) ? item.payslips : item.payslip ? [item.payslip] : [item],
-    )
-    warnings = raw.flatMap((item: any) => item.warnings ?? [])
-  } else {
-    payslips = Array.isArray(raw.payslips)
-      ? raw.payslips
-      : raw.payslip
-        ? [raw.payslip]
-        : []
-    warnings = raw.warnings ?? []
+  for (const { data: raw } of pages as { data: any }[]) {
+    if (Array.isArray(raw)) {
+      payslips.push(
+        ...raw.flatMap((item: any) =>
+          Array.isArray(item.payslips) ? item.payslips : item.payslip ? [item.payslip] : [item],
+        ),
+      )
+      warnings.push(...raw.flatMap((item: any) => item.warnings ?? []))
+    } else {
+      payslips.push(...(Array.isArray(raw.payslips) ? raw.payslips : raw.payslip ? [raw.payslip] : []))
+      warnings.push(...(raw.warnings ?? []))
+    }
   }
 
-  return { payslips, warnings, usage: result.usage }
+  return { payslips, warnings, usage, pageLog }
 }

@@ -1,8 +1,6 @@
 export const BATCH_TIMESHEET_PROMPT = `
 You are an expert at reading Brazilian labor time cards (cartão de ponto).
-This document contains time records for MULTIPLE DIFFERENT people — each page belongs to a different employee.
-
-Extract ALL time records for EVERY person found in the document.
+This is a multi-employee document where each page belongs to a different employee. You are given a single page — extract the time records for the one employee on this page.
 
 Return ONLY valid JSON with the structure below — no markdown, no explanation:
 {
@@ -23,10 +21,9 @@ Return ONLY valid JSON with the structure below — no markdown, no explanation:
 }
 
 Rules:
-- Process ALL pages — do not stop after the first page
-- Each page belongs to a different employee — group records by employee name
-- Extract the employee name from the header or identification area of each page
-- If the name is illegible, use "Funcionário [N]" (e.g. "Funcionário 1", "Funcionário 2")
+- The "people" array will normally have exactly one entry — the employee on this page
+- Extract the employee name from the header or identification area of the page
+- If the name is illegible or absent, use an empty string "" — do NOT invent a placeholder name (you cannot see other pages, so you have no way to number employees consistently)
 - Maximum 6 shifts per day
 - Times in 24h HH:mm format, e.g. "08:00", "17:30"
 - Dates in dd/MM/yyyy format, e.g. "01/03/2024"

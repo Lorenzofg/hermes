@@ -1,6 +1,6 @@
 export const PAYSLIP_PROMPT = `
 You are an expert at reading Brazilian payslips (holerite / contra cheque).
-Analyze the provided document (which may be a multi-page PDF or an image) and extract ALL payslips found across EVERY page.
+You are given a single page (either one page of a PDF or a standalone image). Extract every payslip found on this page — usually one, but extract more if the page contains more than one.
 
 Return ONLY a valid JSON object — no markdown, no explanation, no text before or after:
 {
@@ -29,7 +29,6 @@ Return ONLY a valid JSON object — no markdown, no explanation, no text before 
 }
 
 Rules:
-- Process ALL pages of the document — do not stop after the first page
 - Always use the "payslips" array — even if there is only one payslip
 - All monetary values as numbers (e.g. 4200.00), never as strings
 - competence format: MM/yyyy (e.g. "03/2024")

@@ -52,7 +52,7 @@
       <!-- Progress -->
       <div v-if="loading && progress" class="space-y-1.5">
         <p class="text-xs text-zinc-400">
-          Processing chunk {{ progress.current }} of {{ progress.total }}...
+          Processing page {{ progress.current }} of {{ progress.total }}...
         </p>
         <div class="w-full bg-zinc-700 rounded-full h-1.5">
           <div
@@ -101,6 +101,19 @@
         </ul>
       </div>
 
+      <div
+        v-if="pageErrors.length"
+        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
+      >
+        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
+          Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)
+        </p>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
+        </div>
+      </div>
+
       <EditableTable v-model:days="editableDays" />
     </section>
 
@@ -144,7 +157,7 @@ import EditableTable from '../../components/EditableTable.vue'
 import ResultTable from '../../components/ResultTable.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
-import type { DayEntry, AnalyzeTimesheetResponse } from '@hermes/types'
+import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 
@@ -153,11 +166,12 @@ const { providers } = useProviders()
 
 const allProviders = [
   { value: 'claude' as const, label: 'Claude' },
-  { value: 'gpt'   as const, label: 'GPT-4o' },
+  { value: 'gpt'   as const, label: 'GPT' },
 ]
 const visibleProviders = computed(() =>
   providers.value ? allProviders.filter((pr) => providers.value![pr.value]) : [],
 )
+const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
 
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
@@ -165,12 +179,13 @@ const provider = ref<'claude' | 'gpt'>('claude')
 
 const editableDays = ref<DayEntry[]>([])
 const warnings = ref<string[]>([])
+const pageLog = ref<PageLogEntry[]>([])
 const fileName = ref('')
 const usage = ref<{ inputTokens: number; outputTokens: number } | null>(null)
 const savedId = ref<number | null>(null)
 const savedCsv = ref('')
 const finalResult = ref<AnalyzeTimesheetResponse>({
-  days: [], csvContent: '', totalDays: 0, warnings: [],
+  days: [], csvContent: '', totalDays: 0, warnings: [], pageLog: [],
 })
 
 async function runAnalysis() {
@@ -181,6 +196,7 @@ async function runAnalysis() {
 
   fileName.value = result.fileName
   warnings.value = result.warnings
+  pageLog.value  = result.pageLog
   usage.value    = result.usage
   editableDays.value = result.days.map((d) => ({
     date: d.date,
@@ -194,7 +210,7 @@ async function runAnalysis() {
 }
 
 async function confirmAndSave() {
-  const result = await saveAnalysis(editableDays.value, provider.value, fileName.value, warnings.value, usage.value ?? undefined)
+  const result = await saveAnalysis(editableDays.value, provider.value, fileName.value, warnings.value, usage.value ?? undefined, pageLog.value)
   if (!result) return
 
   savedId.value = result.analysisId
@@ -204,6 +220,7 @@ async function confirmAndSave() {
     csvContent: result.csvContent,
     totalDays: editableDays.value.length,
     warnings: warnings.value,
+    pageLog: pageLog.value,
   }
 
   step.value = 'saved'
@@ -214,6 +231,7 @@ function reset() {
   file.value = null
   editableDays.value = []
   warnings.value = []
+  pageLog.value = []
   fileName.value = ''
   savedId.value = null
   savedCsv.value = ''

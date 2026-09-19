@@ -21,6 +21,19 @@
         {{ analysis.fileName }} — {{ analysis.totalPeople }} people — {{ analysis.provider.toUpperCase() }}
       </p>
 
+      <div
+        v-if="pageErrors.length"
+        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
+      >
+        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
+          Page Errors ({{ pageErrors.length }} of {{ analysis.pageLog.length }} pages)
+        </p>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
+        </div>
+      </div>
+
       <div class="space-y-3">
         <div
           v-for="person in analysis.people"
@@ -62,7 +75,7 @@
               </ul>
             </div>
 
-            <ResultTable :result="{ days: person.days, csvContent: person.csvContent, totalDays: person.totalDays, warnings: person.warnings }" />
+            <ResultTable :result="{ days: person.days, csvContent: person.csvContent, totalDays: person.totalDays, warnings: person.warnings, pageLog: [] }" />
           </div>
         </div>
       </div>
@@ -72,11 +85,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import ResultTable from '../../components/ResultTable.vue'
-import type { DayEntry } from '@hermes/types'
+import type { DayEntry, PageLogEntry } from '@hermes/types'
 
 interface PersonDetail {
   id: number
@@ -92,6 +105,7 @@ interface BatchAnalysis {
   fileName: string
   provider: string
   totalPeople: number
+  pageLog: PageLogEntry[]
   people: PersonDetail[]
 }
 
@@ -99,6 +113,7 @@ const route    = useRoute()
 const loading  = ref(true)
 const analysis = ref<BatchAnalysis | null>(null)
 const expanded = ref<Set<number>>(new Set())
+const pageErrors = computed(() => analysis.value?.pageLog.filter((p) => p.status === 'error') ?? [])
 
 onMounted(async () => {
   try {

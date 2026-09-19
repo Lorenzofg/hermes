@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import type { AnalyzeTimesheetResponse, DayEntry } from '@hermes/types'
+import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry } from '@hermes/types'
 
 export function useTimesheet() {
   const loading = ref(false)
@@ -74,6 +74,7 @@ export function useTimesheet() {
     fileName: string,
     warnings: string[],
     usage?: { inputTokens: number; outputTokens: number },
+    pageLog?: PageLogEntry[],
   ): Promise<{ analysisId: number; csvContent: string } | null> {
     loading.value = true
     error.value = null
@@ -84,6 +85,7 @@ export function useTimesheet() {
         provider,
         fileName,
         warnings,
+        pageLog: pageLog ?? [],
         inputTokens:  usage?.inputTokens ?? 0,
         outputTokens: usage?.outputTokens ?? 0,
       })

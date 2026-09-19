@@ -3,6 +3,14 @@ export interface Shift {
   clockOut: string // "HH:mm" or empty
 }
 
+// One entry per PDF page processed by the AI — lets the user see which pages
+// failed and why, since a multi-page document is now analyzed page by page.
+export interface PageLogEntry {
+  page: number
+  status: 'ok' | 'error'
+  detail?: string // raw AI error text when status is 'error'
+}
+
 export interface DayEntry {
   date: string    // "dd/MM/yyyy"
   shifts: Shift[] // max 6 shifts
@@ -13,6 +21,7 @@ export interface AnalyzeTimesheetResponse {
   csvContent: string
   totalDays: number
   warnings: string[]
+  pageLog: PageLogEntry[]
 }
 
 export interface PjeCalcRow {
@@ -36,6 +45,7 @@ export interface AnalyzeBatchTimesheetResponse {
   people: BatchPersonResult[]
   fileName: string
   usage: { inputTokens: number; outputTokens: number }
+  pageLog: PageLogEntry[]
 }
 
 // Payslip types

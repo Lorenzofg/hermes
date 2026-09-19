@@ -2,7 +2,7 @@ import { db } from '../../db/index.js'
 import { timesheetAnalyses, timesheetRecords } from './schema.js'
 import { eq } from 'drizzle-orm'
 import { stringify } from 'csv-stringify/sync'
-import type { DayEntry, AnalyzeTimesheetResponse } from '@hermes/types'
+import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry } from '@hermes/types'
 
 // CSV headers use PJe-Calc column naming convention
 const CSV_HEADERS = [
@@ -44,17 +44,18 @@ interface SaveParams {
   fileName: string
   days: DayEntry[]
   warnings: string[]
+  pageLog: PageLogEntry[]
   csvContent: string
   inputTokens: number
   outputTokens: number
 }
 
 export async function saveAnalysis(params: SaveParams) {
-  const { provider, fileName, days, warnings, csvContent, inputTokens, outputTokens } = params
+  const { provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens } = params
 
   const [record] = await db
     .insert(timesheetAnalyses)
-    .values({ provider, fileName, totalDays: days.length, csvContent, warnings, inputTokens, outputTokens })
+    .values({ provider, fileName, totalDays: days.length, csvContent, warnings, pageLog, inputTokens, outputTokens })
     .returning()
 
   if (days.length > 0) {
@@ -102,6 +103,7 @@ export async function getAnalysis(id: number): Promise<AnalyzeTimesheetResponse 
     csvContent: record.csvContent,
     totalDays:  record.totalDays,
     warnings:   record.warnings,
+    pageLog:    record.pageLog,
     days: rows.map((r) => ({
       date: r.date,
       shifts: [

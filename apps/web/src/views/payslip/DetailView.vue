@@ -29,6 +29,19 @@
         </ul>
       </div>
 
+      <div
+        v-if="pageErrors.length"
+        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
+      >
+        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
+          Page Errors ({{ pageErrors.length }} of {{ analysis.pageLog.length }} pages)
+        </p>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
+        </div>
+      </div>
+
       <!-- Pagination if multiple payslips -->
       <div v-if="analysis.payslips.length > 1" class="flex items-center gap-2">
         <button
@@ -54,7 +67,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import PayslipCard from '../../components/PayslipCard.vue'
-import type { Payslip } from '@hermes/types'
+import type { Payslip, PageLogEntry } from '@hermes/types'
 
 interface AnalysisDetail {
   id: number
@@ -62,6 +75,7 @@ interface AnalysisDetail {
   provider: string
   createdAt: string
   warnings: string[]
+  pageLog: PageLogEntry[]
   payslips: Payslip[]
 }
 
@@ -69,6 +83,7 @@ const route = useRoute()
 const analysis = ref<AnalysisDetail | null>(null)
 const loading = ref(true)
 const currentIndex = ref(0)
+const pageErrors = computed(() => analysis.value?.pageLog.filter((p) => p.status === 'error') ?? [])
 
 const currentPayslip = computed(() => analysis.value?.payslips[currentIndex.value] ?? null)
 

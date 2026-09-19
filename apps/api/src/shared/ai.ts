@@ -42,9 +42,18 @@ export async function callClaude<T>(
       }
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 16000,
-    system: prompt,
+    model: 'claude-sonnet-5',
+    max_tokens: 8192,
+    // Sonnet 5 runs adaptive thinking by default — disabled here since this is a
+    // deterministic single-page extraction task with no multi-step reasoning to
+    // gain from it, and thinking tokens would otherwise eat into max_tokens and
+    // add cost/latency for no benefit.
+    thinking: { type: 'disabled' },
+    // The prompt is identical on every page/document — caching it means only the
+    // first call in a ~5min window pays full price; every call after reads it at
+    // ~10% of the input cost, which matters a lot now that a 64-page PDF means
+    // 64 calls all carrying the same system prompt.
+    system: [{ type: 'text', text: prompt, cache_control: { type: 'ephemeral' } }],
     messages: [
       {
         role: 'user',
@@ -57,20 +66,28 @@ export async function callClaude<T>(
     throw new Error('Response truncated: document chunk is too large for a single AI call.')
   }
 
-  const raw = response.content[0].type === 'text' ? response.content[0].text : ''
+  // Defensively find the text block rather than assuming content[0] — a
+  // thinking block (or other block type) can be ordered before it.
+  const textBlock = response.content.find((block) => block.type === 'text')
+  const raw = textBlock && 'text' in textBlock ? textBlock.text : ''
   const cleaned = extractJson(raw)
 
   let parsed: T
   try {
     parsed = JSON.parse(cleaned) as T
   } catch {
-    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 120)}`)
+    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 4000)}`)
   }
 
   return {
     data: parsed,
     usage: {
-      inputTokens:  response.usage.input_tokens,
+      // cache_creation/cache_read tokens are billed separately from input_tokens
+      // by Anthropic (at ~1.25x and ~0.1x the base rate) — folded in here so the
+      // reported total reflects real tokens processed, not just the uncached slice.
+      inputTokens:  response.usage.input_tokens
+        + (response.usage.cache_creation_input_tokens ?? 0)
+        + (response.usage.cache_read_input_tokens ?? 0),
       outputTokens: response.usage.output_tokens,
     },
   }
@@ -84,8 +101,8 @@ export async function callGpt<T>(
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o',
-    max_tokens: 16000,
+    model: 'gpt',
+    max_tokens: 4096,
     messages: [
       { role: 'system', content: prompt },
       {
@@ -108,7 +125,7 @@ export async function callGpt<T>(
   try {
     parsed = JSON.parse(cleaned) as T
   } catch {
-    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 120)}`)
+    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 4000)}`)
   }
 
   return {

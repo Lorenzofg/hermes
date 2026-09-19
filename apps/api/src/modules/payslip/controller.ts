@@ -3,7 +3,7 @@ import { processPayslip } from './processor.js'
 import { saveAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
-import type { Payslip } from '@hermes/types'
+import type { Payslip, PageLogEntry } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
@@ -36,6 +36,7 @@ export async function payslipController(app: FastifyInstance) {
       return reply.status(200).send({
         payslips: result.payslips,
         warnings: result.warnings,
+        pageLog:  result.pageLog,
         usage:    result.usage,
         fileName: file.filename,
       })
@@ -74,12 +75,15 @@ export async function payslipController(app: FastifyInstance) {
       startSSE(reply)
 
       try {
-        const result = await processPayslip(base64, mimeType, provider)
+        const result = await processPayslip(base64, mimeType, provider, (current, total) => {
+          sendEvent(reply, { type: 'progress', current, total })
+        })
 
         sendEvent(reply, {
           type:     'result',
           payslips: result.payslips,
           warnings: result.warnings,
+          pageLog:  result.pageLog,
           usage:    result.usage,
           fileName,
         })
@@ -92,16 +96,16 @@ export async function payslipController(app: FastifyInstance) {
   )
 
   // POST /api/payslip/save — saves all payslips from one PDF in a single analysis
-  app.post<{ Body: { payslips: Payslip[]; warnings: string[]; provider: 'claude' | 'gpt'; fileName: string; inputTokens?: number; outputTokens?: number } }>(
+  app.post<{ Body: { payslips: Payslip[]; warnings: string[]; pageLog?: PageLogEntry[]; provider: 'claude' | 'gpt'; fileName: string; inputTokens?: number; outputTokens?: number } }>(
     '/save',
     async (request, reply) => {
-      const { payslips, warnings = [], provider, fileName, inputTokens = 0, outputTokens = 0 } = request.body
+      const { payslips, warnings = [], pageLog = [], provider, fileName, inputTokens = 0, outputTokens = 0 } = request.body
 
       if (!payslips || payslips.length === 0) {
         return reply.status(400).send({ error: 'No payslips provided.' })
       }
 
-      const record = await saveAnalysis({ provider, fileName, payslips, warnings, inputTokens, outputTokens })
+      const record = await saveAnalysis({ provider, fileName, payslips, warnings, pageLog, inputTokens, outputTokens })
 
       return reply.status(201).send({ analysisId: record.id })
     },

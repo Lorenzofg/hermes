@@ -1,23 +1,24 @@
 import { db } from '../../db/index.js'
 import { payslipAnalyses, payslipRecords, payslipItems } from './schema.js'
 import { eq, inArray } from 'drizzle-orm'
-import type { Payslip } from '@hermes/types'
+import type { Payslip, PageLogEntry } from '@hermes/types'
 
 interface SaveParams {
   provider: 'claude' | 'gpt'
   fileName: string
   payslips: Payslip[]
   warnings: string[]
+  pageLog: PageLogEntry[]
   inputTokens: number
   outputTokens: number
 }
 
 export async function saveAnalysis(params: SaveParams) {
-  const { provider, fileName, payslips, warnings, inputTokens, outputTokens } = params
+  const { provider, fileName, payslips, warnings, pageLog, inputTokens, outputTokens } = params
 
   const [analysis] = await db
     .insert(payslipAnalyses)
-    .values({ provider, fileName, warnings, inputTokens, outputTokens })
+    .values({ provider, fileName, warnings, pageLog, inputTokens, outputTokens })
     .returning()
 
   for (const payslip of payslips) {
@@ -100,6 +101,7 @@ export async function getAnalysis(id: number) {
     provider:  analysis.provider,
     createdAt: analysis.createdAt,
     warnings:  analysis.warnings,
+    pageLog:   analysis.pageLog,
     payslips,
   }
 }
