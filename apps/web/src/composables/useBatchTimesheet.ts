@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import type { BatchPersonResult, AnalyzeBatchTimesheetResponse, PageLogEntry } from '@hermes/types'
+import type { BatchPersonResult, AnalyzeBatchTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
 
 export function useBatchTimesheet() {
   const loading  = ref(false)
@@ -9,7 +9,7 @@ export function useBatchTimesheet() {
 
   async function analyzePreview(
     file: File,
-    provider: 'claude' | 'gpt',
+    provider: AIProvider,
   ): Promise<AnalyzeBatchTimesheetResponse | null> {
     loading.value  = true
     error.value    = null
@@ -70,7 +70,7 @@ export function useBatchTimesheet() {
 
   async function saveAnalysis(
     people: BatchPersonResult[],
-    provider: 'claude' | 'gpt',
+    provider: AIProvider,
     fileName: string,
     usage?: { inputTokens: number; outputTokens: number },
     pageLog?: PageLogEntry[],

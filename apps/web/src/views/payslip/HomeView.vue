@@ -158,7 +158,7 @@ import PayslipCard from '../../components/PayslipCard.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { usePayslip } from '../../composables/usePayslip'
 import { useProviders } from '../../composables/useProviders'
-import type { Payslip, PageLogEntry } from '@hermes/types'
+import type { Payslip, PageLogEntry, AIProvider } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
 
@@ -168,6 +168,7 @@ const { providers } = useProviders()
 const allProviders = [
   { value: 'claude' as const, label: 'Claude' },
   { value: 'gpt'   as const, label: 'GPT' },
+  { value: 'gemini' as const, label: 'Gemini' },
 ]
 const visibleProviders = computed(() =>
   providers.value ? allProviders.filter((pr) => providers.value![pr.value]) : [],
@@ -176,7 +177,7 @@ const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'erro
 
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
-const provider = ref<'claude' | 'gpt'>('claude')
+const provider = ref<AIProvider>('claude')
 const payslips = ref<Payslip[]>([])
 const warnings = ref<string[]>([])
 const pageLog = ref<PageLogEntry[]>([])

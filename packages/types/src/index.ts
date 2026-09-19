@@ -1,3 +1,5 @@
+export type AIProvider = 'claude' | 'gpt' | 'gemini'
+
 export interface Shift {
   clockIn: string  // "HH:mm" or empty
   clockOut: string // "HH:mm" or empty

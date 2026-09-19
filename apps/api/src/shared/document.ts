@@ -1,5 +1,6 @@
-import { callClaude, callGpt, type TokenUsage } from './ai.js'
+import { callClaude, callGpt, callGemini, type TokenUsage } from './ai.js'
 import { splitPdfIntoPages } from './pdf.js'
+import type { AIProvider } from '@hermes/types'
 
 const PAGE_CONCURRENCY = 6
 
@@ -35,7 +36,7 @@ export async function analyzeByPage<T>(
   fileBase64: string,
   mimeType: string,
   prompt: string,
-  provider: 'claude' | 'gpt',
+  provider: AIProvider,
   onProgress?: (current: number, total: number) => void,
 ): Promise<PagedAnalysis<T>> {
   const isPdf = mimeType === 'application/pdf'
@@ -56,7 +57,9 @@ export async function analyzeByPage<T>(
         const result =
           provider === 'gpt'
             ? await callGpt<T>(prompt, pages[i], mimeType)
-            : await callClaude<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType)
+            : provider === 'gemini'
+              ? await callGemini<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType)
+              : await callClaude<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType)
 
         results[i] = result.data
         usage.inputTokens += result.usage.inputTokens

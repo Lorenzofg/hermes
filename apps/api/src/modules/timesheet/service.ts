@@ -2,7 +2,7 @@ import { db } from '../../db/index.js'
 import { timesheetAnalyses, timesheetRecords } from './schema.js'
 import { eq } from 'drizzle-orm'
 import { stringify } from 'csv-stringify/sync'
-import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry } from '@hermes/types'
+import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
 
 // CSV headers must match PJe-Calc's expected import format exactly
 // (capitalized, with the accent on "Saída") — see ExemploJornadaCartaoDePonto.csv
@@ -41,7 +41,7 @@ export function generateCsv(days: DayEntry[]): string {
 }
 
 interface SaveParams {
-  provider: 'claude' | 'gpt'
+  provider: AIProvider
   fileName: string
   days: DayEntry[]
   warnings: string[]

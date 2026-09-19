@@ -2,10 +2,10 @@ import { db } from '../../db/index.js'
 import { batchTimesheetAnalyses, batchTimesheetPeople, batchTimesheetRecords } from './schema.js'
 import { eq } from 'drizzle-orm'
 import { generateCsv } from '../timesheet/service.js'
-import type { BatchPersonResult, PageLogEntry } from '@hermes/types'
+import type { BatchPersonResult, PageLogEntry, AIProvider } from '@hermes/types'
 
 interface SaveBatchParams {
-  provider: 'claude' | 'gpt'
+  provider: AIProvider
   fileName: string
   people: BatchPersonResult[]
   pageLog: PageLogEntry[]

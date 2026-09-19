@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
 
 export interface TokenUsage {
   inputTokens: number
@@ -16,6 +17,14 @@ function extractJson(text: string): string {
   const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/)
   if (match) return match[1]
   return text.trim()
+}
+
+// No fallback on purpose — a guessed model ID silently using the wrong model
+// is worse than a clear startup-time error telling you to set it.
+function requireModelEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`Missing required env var: ${name} (set it to the exact model ID for this provider)`)
+  return value
 }
 
 export async function callClaude<T>(
@@ -42,13 +51,12 @@ export async function callClaude<T>(
       }
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-5',
-    max_tokens: 8192,
-    // Sonnet 5 runs adaptive thinking by default — disabled here since this is a
-    // deterministic single-page extraction task with no multi-step reasoning to
-    // gain from it, and thinking tokens would otherwise eat into max_tokens and
-    // add cost/latency for no benefit.
-    thinking: { type: 'disabled' },
+    model: requireModelEnv('ANTHROPIC_MODEL'),
+    max_tokens: 16000,
+    // Opus 5 runs adaptive thinking by default (thinking omitted = adaptive).
+    // Unlike Sonnet 5, disabling thinking on Opus 5 has known failure modes
+    // (tool calls / tags leaking into visible text), so it's left on here —
+    // max_tokens is sized up accordingly to leave room for it.
     // The prompt is identical on every page/document — caching it means only the
     // first call in a ~5min window pays full price; every call after reads it at
     // ~10% of the input cost, which matters a lot now that a 64-page PDF means
@@ -101,7 +109,7 @@ export async function callGpt<T>(
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const response = await client.chat.completions.create({
-    model: 'gpt',
+    model: requireModelEnv('OPENAI_MODEL'),
     max_tokens: 4096,
     messages: [
       { role: 'system', content: prompt },
@@ -133,6 +141,49 @@ export async function callGpt<T>(
     usage: {
       inputTokens:  response.usage?.prompt_tokens ?? 0,
       outputTokens: response.usage?.completion_tokens ?? 0,
+    },
+  }
+}
+
+export async function callGemini<T>(
+  prompt: string,
+  fileBase64: string,
+  mimeType: string,
+): Promise<AIResult<T>> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+
+  const response = await ai.models.generateContent({
+    model: requireModelEnv('GEMINI_MODEL'),
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType, data: fileBase64 } },
+          { text: 'Analyze this document and extract all records.' },
+        ],
+      },
+    ],
+    config: {
+      systemInstruction: prompt,
+      responseMimeType: 'application/json',
+    },
+  })
+
+  const raw = response.text ?? ''
+  const cleaned = extractJson(raw)
+
+  let parsed: T
+  try {
+    parsed = JSON.parse(cleaned) as T
+  } catch {
+    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 4000)}`)
+  }
+
+  return {
+    data: parsed,
+    usage: {
+      inputTokens:  response.usageMetadata?.promptTokenCount ?? 0,
+      outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
     },
   }
 }

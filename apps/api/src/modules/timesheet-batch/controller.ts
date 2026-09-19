@@ -3,7 +3,7 @@ import { processBatchTimesheet } from './processor.js'
 import { saveBatchAnalysis, listBatchAnalyses, getBatchAnalysis, getBatchPersonCsv } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
-import type { BatchPersonResult, PageLogEntry } from '@hermes/types'
+import type { BatchPersonResult, PageLogEntry, AIProvider } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
@@ -11,7 +11,7 @@ const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
 export async function timesheetBatchController(app: FastifyInstance) {
 
   // POST /api/timesheet-batch/preview-stream  (SSE)
-  app.post<{ Querystring: { provider?: 'claude' | 'gpt' } }>(
+  app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview-stream',
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
@@ -23,8 +23,8 @@ export async function timesheetBatchController(app: FastifyInstance) {
         return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}. Use JPG, PNG, WEBP or PDF.` })
       }
 
-      if (file.mimetype === 'application/pdf' && provider === 'gpt') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude provider.' })
+      if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
+        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
       }
 
       const fileChunks: Buffer[] = []
@@ -55,7 +55,7 @@ export async function timesheetBatchController(app: FastifyInstance) {
   )
 
   // POST /api/timesheet-batch/save
-  app.post<{ Body: { people: BatchPersonResult[]; provider: 'claude' | 'gpt'; fileName: string; pageLog?: PageLogEntry[]; inputTokens?: number; outputTokens?: number } }>(
+  app.post<{ Body: { people: BatchPersonResult[]; provider: AIProvider; fileName: string; pageLog?: PageLogEntry[]; inputTokens?: number; outputTokens?: number } }>(
     '/save',
     async (request, reply) => {
       const { people, provider, fileName, pageLog = [], inputTokens = 0, outputTokens = 0 } = request.body

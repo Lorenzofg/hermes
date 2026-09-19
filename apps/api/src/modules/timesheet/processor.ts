@@ -1,7 +1,7 @@
 import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { TIMESHEET_PROMPT } from './prompt.js'
 import type { TokenUsage } from '../../shared/ai.js'
-import type { DayEntry } from '@hermes/types'
+import type { DayEntry, AIProvider } from '@hermes/types'
 
 interface RawResult {
   days: DayEntry[]
@@ -18,7 +18,7 @@ export interface ProcessResult {
 export async function processTimesheet(
   fileBase64: string,
   mimeType: string,
-  provider: 'claude' | 'gpt',
+  provider: AIProvider,
   onProgress?: (current: number, total: number) => void,
 ): Promise<ProcessResult> {
   const { pages, usage, pageLog } = await analyzeByPage<RawResult>(

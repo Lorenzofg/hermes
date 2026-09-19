@@ -29,6 +29,7 @@ app.get('/api/history', async (_req, reply) => reply.send(await getHistory()))
 app.get('/api/providers', async (_req, reply) => reply.send({
   claude: !!process.env.ANTHROPIC_API_KEY,
   gpt:    !!process.env.OPENAI_API_KEY,
+  gemini: !!process.env.GEMINI_API_KEY,
 }))
 
 const port = Number(process.env.PORT ?? 3000)

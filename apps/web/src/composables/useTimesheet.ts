@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
-import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry } from '@hermes/types'
+import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 export function useTimesheet() {
   const loading = ref(false)
@@ -9,7 +9,7 @@ export function useTimesheet() {
 
   async function analyzePreview(
     file: File,
-    provider: 'claude' | 'gpt',
+    provider: AIProvider,
   ): Promise<(AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null> {
     loading.value = true
     error.value = null
@@ -70,7 +70,7 @@ export function useTimesheet() {
 
   async function saveAnalysis(
     days: DayEntry[],
-    provider: 'claude' | 'gpt',
+    provider: AIProvider,
     fileName: string,
     warnings: string[],
     usage?: { inputTokens: number; outputTokens: number },

@@ -3,7 +3,7 @@ import { processPayslip } from './processor.js'
 import { saveAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
-import type { Payslip, PageLogEntry } from '@hermes/types'
+import type { Payslip, PageLogEntry, AIProvider } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
@@ -11,7 +11,7 @@ const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
 export async function payslipController(app: FastifyInstance) {
 
   // POST /api/payslip/preview
-  app.post<{ Querystring: { provider?: 'claude' | 'gpt' } }>(
+  app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview',
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
@@ -23,8 +23,8 @@ export async function payslipController(app: FastifyInstance) {
         return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}.` })
       }
 
-      if (file.mimetype === 'application/pdf' && provider === 'gpt') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude provider.' })
+      if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
+        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
       }
 
       const chunks: Buffer[] = []
@@ -44,7 +44,7 @@ export async function payslipController(app: FastifyInstance) {
   )
 
   // POST /api/payslip/preview-stream  (SSE)
-  app.post<{ Querystring: { provider?: 'claude' | 'gpt' } }>(
+  app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview-stream',
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
@@ -56,8 +56,8 @@ export async function payslipController(app: FastifyInstance) {
         return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}.` })
       }
 
-      if (file.mimetype === 'application/pdf' && provider === 'gpt') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude provider.' })
+      if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
+        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
       }
 
       const fileChunks: Buffer[] = []
@@ -96,7 +96,7 @@ export async function payslipController(app: FastifyInstance) {
   )
 
   // POST /api/payslip/save — saves all payslips from one PDF in a single analysis
-  app.post<{ Body: { payslips: Payslip[]; warnings: string[]; pageLog?: PageLogEntry[]; provider: 'claude' | 'gpt'; fileName: string; inputTokens?: number; outputTokens?: number } }>(
+  app.post<{ Body: { payslips: Payslip[]; warnings: string[]; pageLog?: PageLogEntry[]; provider: AIProvider; fileName: string; inputTokens?: number; outputTokens?: number } }>(
     '/save',
     async (request, reply) => {
       const { payslips, warnings = [], pageLog = [], provider, fileName, inputTokens = 0, outputTokens = 0 } = request.body

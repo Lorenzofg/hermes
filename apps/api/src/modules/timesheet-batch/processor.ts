@@ -1,7 +1,7 @@
 import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { BATCH_TIMESHEET_PROMPT } from './prompt.js'
 import type { TokenUsage } from '../../shared/ai.js'
-import type { BatchPersonResult } from '@hermes/types'
+import type { BatchPersonResult, AIProvider } from '@hermes/types'
 
 interface RawResult {
   people: BatchPersonResult[]
@@ -16,7 +16,7 @@ export interface BatchProcessResult {
 export async function processBatchTimesheet(
   fileBase64: string,
   mimeType: string,
-  provider: 'claude' | 'gpt',
+  provider: AIProvider,
   onProgress?: (current: number, total: number) => void,
 ): Promise<BatchProcessResult> {
   const { pages, usage, pageLog } = await analyzeByPage<RawResult>(

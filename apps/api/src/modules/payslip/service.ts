@@ -1,10 +1,10 @@
 import { db } from '../../db/index.js'
 import { payslipAnalyses, payslipRecords, payslipItems } from './schema.js'
 import { eq, inArray } from 'drizzle-orm'
-import type { Payslip, PageLogEntry } from '@hermes/types'
+import type { Payslip, PageLogEntry, AIProvider } from '@hermes/types'
 
 interface SaveParams {
-  provider: 'claude' | 'gpt'
+  provider: AIProvider
   fileName: string
   payslips: Payslip[]
   warnings: string[]
