@@ -1,8 +1,10 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import { useAuth } from './useAuth'
 import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 export function useTimesheet() {
+  const { authHeader } = useAuth()
   const loading = ref(false)
   const error = ref<string | null>(null)
   const progress = ref<{ current: number; total: number } | null>(null)
@@ -21,12 +23,13 @@ export function useTimesheet() {
 
       const response = await fetch(`/api/timesheet/preview-stream?provider=${provider}`, {
         method: 'POST',
+        headers: authHeader(),
         body: form,
       })
 
       if (!response.ok || !response.body) {
-        const body = await response.text().catch(() => '')
-        error.value = `Request failed: ${response.status} ${response.statusText}${body ? ` — ${body}` : ''}`
+        const body = await response.json().catch(() => null)
+        error.value = body?.error ?? `Request failed: ${response.status} ${response.statusText}`
         return null
       }
 

@@ -1,6 +1,6 @@
 import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { PAYSLIP_PROMPT } from './prompt.js'
-import type { TokenUsage } from '../../shared/ai.js'
+import type { TokenUsage, ProviderCredentials } from '../../shared/ai.js'
 import type { Payslip, AIProvider } from '@hermes/types'
 
 interface AIPayslipResponse {
@@ -19,6 +19,7 @@ export async function processPayslip(
   fileBase64: string,
   mimeType: string,
   provider: AIProvider,
+  credentials: ProviderCredentials,
   onProgress?: (current: number, total: number) => void,
 ): Promise<ProcessResult> {
   const { pages, usage, pageLog } = await analyzeByPage<AIPayslipResponse>(
@@ -26,6 +27,7 @@ export async function processPayslip(
     mimeType,
     PAYSLIP_PROMPT,
     provider,
+    credentials,
     onProgress,
   )
 

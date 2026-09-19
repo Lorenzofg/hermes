@@ -1,10 +1,12 @@
 import { pgTable, serial, text, integer, timestamp, bigint, jsonb } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import { providerEnum } from '../../db/enums.js'
+import { users } from '../auth/schema.js'
 import type { PageLogEntry } from '@hermes/types'
 
 export const batchTimesheetAnalyses = pgTable('batch_timesheet_analyses', {
   id:           serial('id').primaryKey(),
+  userId:       integer('user_id').references(() => users.id, { onDelete: 'cascade' }),
   createdAt:    timestamp('created_at').defaultNow().notNull(),
   provider:     providerEnum('provider').notNull(),
   fileName:     text('file_name').notNull(),

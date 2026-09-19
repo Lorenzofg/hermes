@@ -1,9 +1,10 @@
 import { db } from '../../db/index.js'
 import { payslipAnalyses, payslipRecords, payslipItems } from './schema.js'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import type { Payslip, PageLogEntry, AIProvider } from '@hermes/types'
 
 interface SaveParams {
+  userId: number
   provider: AIProvider
   fileName: string
   payslips: Payslip[]
@@ -14,11 +15,11 @@ interface SaveParams {
 }
 
 export async function saveAnalysis(params: SaveParams) {
-  const { provider, fileName, payslips, warnings, pageLog, inputTokens, outputTokens } = params
+  const { userId, provider, fileName, payslips, warnings, pageLog, inputTokens, outputTokens } = params
 
   const [analysis] = await db
     .insert(payslipAnalyses)
-    .values({ provider, fileName, warnings, pageLog, inputTokens, outputTokens })
+    .values({ userId, provider, fileName, warnings, pageLog, inputTokens, outputTokens })
     .returning()
 
   for (const payslip of payslips) {
@@ -53,7 +54,7 @@ export async function saveAnalysis(params: SaveParams) {
   return analysis
 }
 
-export async function listAnalyses() {
+export async function listAnalyses(userId: number) {
   return db
     .select({
       id:        payslipAnalyses.id,
@@ -62,11 +63,15 @@ export async function listAnalyses() {
       fileName:  payslipAnalyses.fileName,
     })
     .from(payslipAnalyses)
+    .where(eq(payslipAnalyses.userId, userId))
     .orderBy(payslipAnalyses.createdAt)
 }
 
-export async function getAnalysis(id: number) {
-  const [analysis] = await db.select().from(payslipAnalyses).where(eq(payslipAnalyses.id, id))
+export async function getAnalysis(id: number, userId: number) {
+  const [analysis] = await db
+    .select()
+    .from(payslipAnalyses)
+    .where(and(eq(payslipAnalyses.id, id), eq(payslipAnalyses.userId, userId)))
   if (!analysis) return null
 
   const records = await db.select().from(payslipRecords).where(eq(payslipRecords.analysisId, id))

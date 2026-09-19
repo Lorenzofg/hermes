@@ -52,14 +52,12 @@
               </span>
             </div>
             <div class="flex items-center gap-3">
-              <a
-                :href="`/api/timesheet-batch/analyses/${route.params.id}/people/${person.id}/csv`"
-                :download="`timesheet_${person.personName.replace(/[^a-zA-Z0-9_-]/g, '_')}_pjecalc.csv`"
+              <button
                 class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
-                @click.stop
+                @click.stop="downloadPersonCsv(Number(route.params.id), person.id, person.personName)"
               >
                 Export CSV
-              </a>
+              </button>
               <span class="text-xs text-zinc-500">{{ expanded.has(person.id) ? '▲' : '▼' }}</span>
             </div>
           </div>
@@ -89,6 +87,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import ResultTable from '../../components/ResultTable.vue'
+import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
 import type { DayEntry, PageLogEntry } from '@hermes/types'
 
 interface PersonDetail {
@@ -110,6 +109,7 @@ interface BatchAnalysis {
 }
 
 const route    = useRoute()
+const { downloadPersonCsv } = useBatchTimesheet()
 const loading  = ref(true)
 const analysis = ref<BatchAnalysis | null>(null)
 const expanded = ref<Set<number>>(new Set())

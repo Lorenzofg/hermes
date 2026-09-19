@@ -16,7 +16,7 @@ export interface HistoryItem {
   detailPath: string
 }
 
-export async function getHistory(): Promise<HistoryItem[]> {
+export async function getHistory(userId: number): Promise<HistoryItem[]> {
   const timesheets = await db
     .select({
       id:           timesheetAnalyses.id,
@@ -28,6 +28,7 @@ export async function getHistory(): Promise<HistoryItem[]> {
       outputTokens: timesheetAnalyses.outputTokens,
     })
     .from(timesheetAnalyses)
+    .where(eq(timesheetAnalyses.userId, userId))
     .orderBy(timesheetAnalyses.createdAt)
 
   const items: HistoryItem[] = timesheets.map((r) => ({
@@ -54,6 +55,7 @@ export async function getHistory(): Promise<HistoryItem[]> {
     })
     .from(payslipAnalyses)
     .leftJoin(payslipRecords, eq(payslipRecords.analysisId, payslipAnalyses.id))
+    .where(eq(payslipAnalyses.userId, userId))
     .groupBy(payslipAnalyses.id)
 
   for (const r of payslips) {
@@ -81,6 +83,7 @@ export async function getHistory(): Promise<HistoryItem[]> {
       outputTokens: batchTimesheetAnalyses.outputTokens,
     })
     .from(batchTimesheetAnalyses)
+    .where(eq(batchTimesheetAnalyses.userId, userId))
 
   for (const r of batches) {
     items.push({

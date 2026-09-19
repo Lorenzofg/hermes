@@ -1,16 +1,15 @@
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { useSettings } from './useSettings'
 
 export function useProviders() {
   const providers = ref<{ claude: boolean; gpt: boolean; gemini: boolean } | null>(null)
+  const { fetchSettings } = useSettings()
 
   onMounted(async () => {
-    try {
-      const { data } = await axios.get<{ claude: boolean; gpt: boolean; gemini: boolean }>('/api/providers')
-      providers.value = data
-    } catch {
-      providers.value = { claude: true, gpt: true, gemini: true }
-    }
+    const data = await fetchSettings()
+    providers.value = data
+      ? { claude: data.claude.configured, gpt: data.gpt.configured, gemini: data.gemini.configured }
+      : { claude: false, gpt: false, gemini: false }
   })
 
   return { providers }

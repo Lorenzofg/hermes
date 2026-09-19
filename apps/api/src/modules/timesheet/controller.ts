@@ -3,6 +3,8 @@ import { processTimesheet } from './processor.js'
 import { generateCsv, saveAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
+import { requireAuth } from '../../shared/auth.js'
+import { getCredentials } from '../settings/service.js'
 import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
@@ -13,8 +15,14 @@ export async function timesheetController(app: FastifyInstance) {
   // POST /api/timesheet/preview
   app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview',
+    { preHandler: requireAuth },
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure your ${provider} API key and model in Settings first.` })
+      }
 
       const file = await request.file()
       if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
@@ -31,7 +39,7 @@ export async function timesheetController(app: FastifyInstance) {
       for await (const chunk of file.file) chunks.push(chunk)
       const base64 = Buffer.concat(chunks).toString('base64')
 
-      const result = await processTimesheet(base64, file.mimetype, provider)
+      const result = await processTimesheet(base64, file.mimetype, provider, credentials)
       const csvContent = generateCsv(result.days)
 
       const response: AnalyzeTimesheetResponse & { fileName: string; usage: typeof result.usage } = {
@@ -51,8 +59,14 @@ export async function timesheetController(app: FastifyInstance) {
   // POST /api/timesheet/preview-stream  (SSE)
   app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview-stream',
+    { preHandler: requireAuth },
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure your ${provider} API key and model in Settings first.` })
+      }
 
       const file = await request.file()
       if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
@@ -80,7 +94,7 @@ export async function timesheetController(app: FastifyInstance) {
       startSSE(reply)
 
       try {
-        const result = await processTimesheet(base64, mimeType, provider, (current, total) => {
+        const result = await processTimesheet(base64, mimeType, provider, credentials, (current, total) => {
           sendEvent(reply, { type: 'progress', current, total })
         })
         const csvContent = generateCsv(result.days)
@@ -105,6 +119,7 @@ export async function timesheetController(app: FastifyInstance) {
   // POST /api/timesheet/save
   app.post<{ Body: { days: DayEntry[]; provider: AIProvider; fileName: string; warnings: string[]; pageLog?: PageLogEntry[]; inputTokens?: number; outputTokens?: number } }>(
     '/save',
+    { preHandler: requireAuth },
     async (request, reply) => {
       const { days, provider, fileName, warnings, pageLog = [], inputTokens = 0, outputTokens = 0 } = request.body
 
@@ -113,32 +128,32 @@ export async function timesheetController(app: FastifyInstance) {
       }
 
       const csvContent = generateCsv(days)
-      const record = await saveAnalysis({ provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens })
+      const record = await saveAnalysis({ userId: request.user.id, provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens })
 
       return reply.status(201).send({ analysisId: record.id, csvContent })
     },
   )
 
   // GET /api/timesheet/analyses
-  app.get('/analyses', async (_request, reply) => {
-    return reply.send(await listAnalyses())
+  app.get('/analyses', { preHandler: requireAuth }, async (request, reply) => {
+    return reply.send(await listAnalyses(request.user.id))
   })
 
   // GET /api/timesheet/analyses/:id
-  app.get<{ Params: { id: string } }>('/analyses/:id', async (request, reply) => {
+  app.get<{ Params: { id: string } }>('/analyses/:id', { preHandler: requireAuth }, async (request, reply) => {
     const id = Number(request.params.id)
     if (isNaN(id)) return reply.status(400).send({ error: 'Invalid ID.' })
 
-    const analysis = await getAnalysis(id)
+    const analysis = await getAnalysis(id, request.user.id)
     if (!analysis) return reply.status(404).send({ error: 'Analysis not found.' })
 
     return reply.send(analysis)
   })
 
   // GET /api/timesheet/analyses/:id/csv
-  app.get<{ Params: { id: string } }>('/analyses/:id/csv', async (request, reply) => {
+  app.get<{ Params: { id: string } }>('/analyses/:id/csv', { preHandler: requireAuth }, async (request, reply) => {
     const id = Number(request.params.id)
-    const analysis = await getAnalysis(id)
+    const analysis = await getAnalysis(id, request.user.id)
     if (!analysis) return reply.status(404).send({ error: 'Analysis not found.' })
 
     return reply

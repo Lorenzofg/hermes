@@ -1,6 +1,6 @@
 import { db } from '../../db/index.js'
 import { timesheetAnalyses, timesheetRecords } from './schema.js'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { stringify } from 'csv-stringify/sync'
 import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
 
@@ -41,6 +41,7 @@ export function generateCsv(days: DayEntry[]): string {
 }
 
 interface SaveParams {
+  userId: number
   provider: AIProvider
   fileName: string
   days: DayEntry[]
@@ -52,11 +53,11 @@ interface SaveParams {
 }
 
 export async function saveAnalysis(params: SaveParams) {
-  const { provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens } = params
+  const { userId, provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens } = params
 
   const [record] = await db
     .insert(timesheetAnalyses)
-    .values({ provider, fileName, totalDays: days.length, csvContent, warnings, pageLog, inputTokens, outputTokens })
+    .values({ userId, provider, fileName, totalDays: days.length, csvContent, warnings, pageLog, inputTokens, outputTokens })
     .returning()
 
   if (days.length > 0) {
@@ -81,7 +82,7 @@ export async function saveAnalysis(params: SaveParams) {
   return record
 }
 
-export async function listAnalyses() {
+export async function listAnalyses(userId: number) {
   return db
     .select({
       id:        timesheetAnalyses.id,
@@ -91,11 +92,15 @@ export async function listAnalyses() {
       totalDays: timesheetAnalyses.totalDays,
     })
     .from(timesheetAnalyses)
+    .where(eq(timesheetAnalyses.userId, userId))
     .orderBy(timesheetAnalyses.createdAt)
 }
 
-export async function getAnalysis(id: number): Promise<AnalyzeTimesheetResponse | null> {
-  const [record] = await db.select().from(timesheetAnalyses).where(eq(timesheetAnalyses.id, id))
+export async function getAnalysis(id: number, userId: number): Promise<AnalyzeTimesheetResponse | null> {
+  const [record] = await db
+    .select()
+    .from(timesheetAnalyses)
+    .where(and(eq(timesheetAnalyses.id, id), eq(timesheetAnalyses.userId, userId)))
   if (!record) return null
 
   const rows = await db.select().from(timesheetRecords).where(eq(timesheetRecords.analysisId, id))

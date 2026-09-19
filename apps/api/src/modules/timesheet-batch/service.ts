@@ -1,10 +1,11 @@
 import { db } from '../../db/index.js'
 import { batchTimesheetAnalyses, batchTimesheetPeople, batchTimesheetRecords } from './schema.js'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { generateCsv } from '../timesheet/service.js'
 import type { BatchPersonResult, PageLogEntry, AIProvider } from '@hermes/types'
 
 interface SaveBatchParams {
+  userId: number
   provider: AIProvider
   fileName: string
   people: BatchPersonResult[]
@@ -14,11 +15,11 @@ interface SaveBatchParams {
 }
 
 export async function saveBatchAnalysis(params: SaveBatchParams) {
-  const { provider, fileName, people, pageLog, inputTokens, outputTokens } = params
+  const { userId, provider, fileName, people, pageLog, inputTokens, outputTokens } = params
 
   const [analysis] = await db
     .insert(batchTimesheetAnalyses)
-    .values({ provider, fileName, totalPeople: people.length, pageLog, inputTokens, outputTokens })
+    .values({ userId, provider, fileName, totalPeople: people.length, pageLog, inputTokens, outputTokens })
     .returning()
 
   for (const person of people) {
@@ -52,7 +53,7 @@ export async function saveBatchAnalysis(params: SaveBatchParams) {
   return analysis
 }
 
-export async function listBatchAnalyses() {
+export async function listBatchAnalyses(userId: number) {
   return db
     .select({
       id:          batchTimesheetAnalyses.id,
@@ -62,11 +63,15 @@ export async function listBatchAnalyses() {
       totalPeople: batchTimesheetAnalyses.totalPeople,
     })
     .from(batchTimesheetAnalyses)
+    .where(eq(batchTimesheetAnalyses.userId, userId))
     .orderBy(batchTimesheetAnalyses.createdAt)
 }
 
-export async function getBatchAnalysis(id: number) {
-  const [analysis] = await db.select().from(batchTimesheetAnalyses).where(eq(batchTimesheetAnalyses.id, id))
+export async function getBatchAnalysis(id: number, userId: number) {
+  const [analysis] = await db
+    .select()
+    .from(batchTimesheetAnalyses)
+    .where(and(eq(batchTimesheetAnalyses.id, id), eq(batchTimesheetAnalyses.userId, userId)))
   if (!analysis) return null
 
   const people = await db.select().from(batchTimesheetPeople).where(eq(batchTimesheetPeople.analysisId, id))
@@ -92,7 +97,15 @@ export async function getBatchAnalysis(id: number) {
   return { ...analysis, people: peopleWithDays }
 }
 
-export async function getBatchPersonCsv(personId: number) {
-  const [person] = await db.select().from(batchTimesheetPeople).where(eq(batchTimesheetPeople.id, personId))
+export async function getBatchPersonCsv(personId: number, userId: number) {
+  const [person] = await db
+    .select({
+      id:          batchTimesheetPeople.id,
+      personName:  batchTimesheetPeople.personName,
+      csvContent:  batchTimesheetPeople.csvContent,
+    })
+    .from(batchTimesheetPeople)
+    .innerJoin(batchTimesheetAnalyses, eq(batchTimesheetAnalyses.id, batchTimesheetPeople.analysisId))
+    .where(and(eq(batchTimesheetPeople.id, personId), eq(batchTimesheetAnalyses.userId, userId)))
   return person ?? null
 }

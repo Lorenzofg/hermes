@@ -1,8 +1,10 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import { useAuth } from './useAuth'
 import type { BatchPersonResult, AnalyzeBatchTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
 
 export function useBatchTimesheet() {
+  const { authHeader } = useAuth()
   const loading  = ref(false)
   const error    = ref<string | null>(null)
   const progress = ref<{ current: number; total: number } | null>(null)
@@ -21,12 +23,13 @@ export function useBatchTimesheet() {
 
       const response = await fetch(`/api/timesheet-batch/preview-stream?provider=${provider}`, {
         method: 'POST',
+        headers: authHeader(),
         body: form,
       })
 
       if (!response.ok || !response.body) {
-        const body = await response.text().catch(() => '')
-        error.value = `Request failed: ${response.status} ${response.statusText}${body ? ` — ${body}` : ''}`
+        const body = await response.json().catch(() => null)
+        error.value = body?.error ?? `Request failed: ${response.status} ${response.statusText}`
         return null
       }
 
@@ -98,12 +101,20 @@ export function useBatchTimesheet() {
     }
   }
 
-  function downloadPersonCsv(analysisId: number, personId: number, personName: string) {
+  // A plain <a href> can't carry the Authorization header this route now
+  // requires, so the CSV is fetched via axios (which does) and turned into
+  // a client-side blob download instead.
+  async function downloadPersonCsv(analysisId: number, personId: number, personName: string) {
     const safeName = personName.replace(/[^a-zA-Z0-9_\-]/g, '_')
+    const { data } = await axios.get(`/api/timesheet-batch/analyses/${analysisId}/people/${personId}/csv`, {
+      responseType: 'blob',
+    })
+    const url = URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8;' }))
     const link = document.createElement('a')
-    link.href = `/api/timesheet-batch/analyses/${analysisId}/people/${personId}/csv`
+    link.href = url
     link.download = `timesheet_${safeName}_pjecalc.csv`
     link.click()
+    URL.revokeObjectURL(url)
   }
 
   return { loading, error, progress, analyzePreview, saveAnalysis, downloadPersonCsv }

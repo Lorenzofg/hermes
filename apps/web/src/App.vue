@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-zinc-900 text-zinc-100">
 
-    <header class="border-b border-zinc-700 bg-zinc-800 sticky top-0 z-10">
+    <header v-if="!$route.meta.public" class="border-b border-zinc-700 bg-zinc-800 sticky top-0 z-10">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <RouterLink to="/timesheet" class="group">
           <h1 class="text-sm font-semibold tracking-widest uppercase text-zinc-100 group-hover:text-white transition-colors">
@@ -40,6 +40,23 @@
           >
             History
           </RouterLink>
+          <RouterLink
+            to="/settings"
+            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            :class="$route.name === 'settings' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
+          >
+            Settings
+          </RouterLink>
+          <div class="w-px h-4 bg-zinc-700" />
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-zinc-500">{{ user?.email }}</span>
+            <button
+              class="text-xs font-medium tracking-wide uppercase text-zinc-400 hover:text-zinc-200 transition-colors"
+              @click="handleLogout"
+            >
+              Logout
+            </button>
+          </div>
         </nav>
       </div>
     </header>
@@ -52,5 +69,14 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { useAuth } from './composables/useAuth'
+
+const router = useRouter()
+const { user, logout } = useAuth()
+
+function handleLogout() {
+  logout()
+  router.push('/login')
+}
 </script>

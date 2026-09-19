@@ -19,20 +19,18 @@ function extractJson(text: string): string {
   return text.trim()
 }
 
-// No fallback on purpose — a guessed model ID silently using the wrong model
-// is worse than a clear startup-time error telling you to set it.
-function requireModelEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing required env var: ${name} (set it to the exact model ID for this provider)`)
-  return value
+export interface ProviderCredentials {
+  apiKey: string
+  model: string
 }
 
 export async function callClaude<T>(
   prompt: string,
   fileBase64: string,
   mimeType: string,
+  credentials: ProviderCredentials,
 ): Promise<AIResult<T>> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const client = new Anthropic({ apiKey: credentials.apiKey })
 
   const isPdf = mimeType === 'application/pdf'
 
@@ -51,7 +49,7 @@ export async function callClaude<T>(
       }
 
   const response = await client.messages.create({
-    model: requireModelEnv('ANTHROPIC_MODEL'),
+    model: credentials.model,
     max_tokens: 16000,
     // Opus 5 runs adaptive thinking by default (thinking omitted = adaptive).
     // Unlike Sonnet 5, disabling thinking on Opus 5 has known failure modes
@@ -105,11 +103,12 @@ export async function callGpt<T>(
   prompt: string,
   imageBase64: string,
   mimeType: string,
+  credentials: ProviderCredentials,
 ): Promise<AIResult<T>> {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const client = new OpenAI({ apiKey: credentials.apiKey })
 
   const response = await client.chat.completions.create({
-    model: requireModelEnv('OPENAI_MODEL'),
+    model: credentials.model,
     max_tokens: 4096,
     messages: [
       { role: 'system', content: prompt },
@@ -149,11 +148,12 @@ export async function callGemini<T>(
   prompt: string,
   fileBase64: string,
   mimeType: string,
+  credentials: ProviderCredentials,
 ): Promise<AIResult<T>> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  const ai = new GoogleGenAI({ apiKey: credentials.apiKey })
 
   const response = await ai.models.generateContent({
-    model: requireModelEnv('GEMINI_MODEL'),
+    model: credentials.model,
     contents: [
       {
         role: 'user',

@@ -1,4 +1,4 @@
-import { callClaude, callGpt, callGemini, type TokenUsage } from './ai.js'
+import { callClaude, callGpt, callGemini, type TokenUsage, type ProviderCredentials } from './ai.js'
 import { splitPdfIntoPages } from './pdf.js'
 import type { AIProvider } from '@hermes/types'
 
@@ -37,6 +37,7 @@ export async function analyzeByPage<T>(
   mimeType: string,
   prompt: string,
   provider: AIProvider,
+  credentials: ProviderCredentials,
   onProgress?: (current: number, total: number) => void,
 ): Promise<PagedAnalysis<T>> {
   const isPdf = mimeType === 'application/pdf'
@@ -56,10 +57,10 @@ export async function analyzeByPage<T>(
       try {
         const result =
           provider === 'gpt'
-            ? await callGpt<T>(prompt, pages[i], mimeType)
+            ? await callGpt<T>(prompt, pages[i], mimeType, credentials)
             : provider === 'gemini'
-              ? await callGemini<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType)
-              : await callClaude<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType)
+              ? await callGemini<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType, credentials)
+              : await callClaude<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType, credentials)
 
         results[i] = result.data
         usage.inputTokens += result.usage.inputTokens

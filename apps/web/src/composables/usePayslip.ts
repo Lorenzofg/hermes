@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
+import { useAuth } from './useAuth'
 import type { Payslip, PageLogEntry, AIProvider } from '@hermes/types'
 
 interface PreviewResponse {
@@ -11,6 +12,7 @@ interface PreviewResponse {
 }
 
 export function usePayslip() {
+  const { authHeader } = useAuth()
   const loading = ref(false)
   const error = ref<string | null>(null)
   const progress = ref<{ current: number; total: number } | null>(null)
@@ -29,11 +31,13 @@ export function usePayslip() {
 
       const response = await fetch(`/api/payslip/preview-stream?provider=${provider}`, {
         method: 'POST',
+        headers: authHeader(),
         body: form,
       })
 
       if (!response.ok || !response.body) {
-        error.value = 'Failed to analyze the payslip.'
+        const body = await response.json().catch(() => null)
+        error.value = body?.error ?? 'Failed to analyze the payslip.'
         return null
       }
 
