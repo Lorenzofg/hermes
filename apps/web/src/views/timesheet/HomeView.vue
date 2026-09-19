@@ -35,6 +35,14 @@
             </button>
           </div>
         </div>
+        <div v-else-if="visibleProviders.length === 1" class="space-y-1.5">
+          <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">AI Provider</label>
+          <p class="text-sm text-zinc-300">{{ visibleProviders[0].label }}</p>
+        </div>
+        <p v-else-if="providers" class="text-xs text-amber-400">
+          No provider configured —
+          <RouterLink to="/settings" class="underline underline-offset-2 hover:text-amber-300">set one up in Settings</RouterLink>.
+        </p>
         <div v-else />
 
         <button
@@ -141,7 +149,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
 import ResultTable from '../../components/ResultTable.vue'
@@ -168,6 +177,15 @@ const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'erro
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
 const provider = ref<AIProvider>('claude')
+
+// Default to whichever provider the user has actually configured, rather
+// than always assuming Claude — otherwise Analyze silently fails for anyone
+// who only set up GPT or Gemini.
+watch(providers, (val) => {
+  if (!val || val[provider.value]) return
+  const configured = (['claude', 'gpt', 'gemini'] as const).find((k) => val[k])
+  if (configured) provider.value = configured
+})
 
 const editableDays = ref<DayEntry[]>([])
 const warnings = ref<string[]>([])
