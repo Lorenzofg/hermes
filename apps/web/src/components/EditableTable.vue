@@ -4,14 +4,35 @@
       <thead>
         <tr class="border-b border-zinc-700">
           <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400 w-32">
-            Date
+            <button
+              class="flex items-center gap-1 hover:text-zinc-100 transition-colors"
+              :title="copiedColumn === 'date' ? 'Copied!' : 'Copy column'"
+              @click="copyColumn('date', editableDays.map((d) => d.date))"
+            >
+              Date
+              <span class="normal-case">{{ copiedColumn === 'date' ? '✓' : '⧉' }}</span>
+            </button>
           </th>
           <template v-for="i in 6" :key="i">
             <th class="px-2 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
-              In {{ i }}
+              <button
+                class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
+                :title="copiedColumn === `in${i}` ? 'Copied!' : 'Copy column'"
+                @click="copyColumn(`in${i}`, editableDays.map((d) => d.shifts[i - 1].clockIn))"
+              >
+                In {{ i }}
+                <span class="normal-case">{{ copiedColumn === `in${i}` ? '✓' : '⧉' }}</span>
+              </button>
             </th>
             <th class="px-2 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
-              Out {{ i }}
+              <button
+                class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
+                :title="copiedColumn === `out${i}` ? 'Copied!' : 'Copy column'"
+                @click="copyColumn(`out${i}`, editableDays.map((d) => d.shifts[i - 1].clockOut))"
+              >
+                Out {{ i }}
+                <span class="normal-case">{{ copiedColumn === `out${i}` ? '✓' : '⧉' }}</span>
+              </button>
             </th>
           </template>
           <th class="px-3 py-3 w-10"></th>
@@ -29,7 +50,7 @@
               v-model="day.date"
               type="text"
               placeholder="dd/MM/yyyy"
-              class="w-full bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+              class="w-full min-w-[92px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
             />
           </td>
 
@@ -39,7 +60,7 @@
                 v-model="day.shifts[t - 1].clockIn"
                 type="text"
                 placeholder="HH:mm"
-                class="w-full bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+                class="w-full min-w-[64px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
               />
             </td>
             <td class="px-2 py-2">
@@ -47,7 +68,7 @@
                 v-model="day.shifts[t - 1].clockOut"
                 type="text"
                 placeholder="HH:mm"
-                class="w-full bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+                class="w-full min-w-[64px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
               />
             </td>
           </template>
@@ -106,5 +127,30 @@ function addDay() {
 
 function removeDay(idx: number) {
   editableDays.value.splice(idx, 1)
+}
+
+const copiedColumn = ref<string | null>(null)
+let copiedTimeout: ReturnType<typeof setTimeout> | undefined
+
+async function copyColumn(key: string, values: string[]) {
+  const text = values.join('\n')
+
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    // Fallback for browsers/contexts without Clipboard API access
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+  }
+
+  copiedColumn.value = key
+  clearTimeout(copiedTimeout)
+  copiedTimeout = setTimeout(() => { copiedColumn.value = null }, 1500)
 }
 </script>

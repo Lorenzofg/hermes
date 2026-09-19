@@ -90,30 +90,20 @@
         </button>
       </div>
 
-      <div
-        v-if="warnings.length"
-        class="border border-amber-700 bg-amber-900/30 rounded-lg px-5 py-4"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-amber-400 mb-2">
-          AI Warnings ({{ warnings.length }})
-        </p>
+      <CollapsibleBox v-if="warnings.length" variant="amber">
+        <template #title>AI Warnings ({{ warnings.length }})</template>
         <ul class="space-y-1">
           <li v-for="(w, i) in warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
         </ul>
-      </div>
+      </CollapsibleBox>
 
-      <div
-        v-if="pageErrors.length"
-        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
-          Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)
-        </p>
+      <CollapsibleBox v-if="pageErrors.length" variant="red">
+        <template #title>Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
           <p class="font-semibold">Page {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
-      </div>
+      </CollapsibleBox>
 
       <!-- Pagination if multiple payslips -->
       <div v-if="payslips.length > 1" class="flex items-center gap-2">
@@ -165,6 +155,7 @@
 import { ref, computed } from 'vue'
 import UploadZone from '../../components/UploadZone.vue'
 import PayslipCard from '../../components/PayslipCard.vue'
+import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { usePayslip } from '../../composables/usePayslip'
 import { useProviders } from '../../composables/useProviders'
 import type { Payslip, PageLogEntry } from '@hermes/types'

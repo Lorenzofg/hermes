@@ -89,18 +89,13 @@
         </button>
       </div>
 
-      <div
-        v-if="pageErrors.length"
-        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
-          Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)
-        </p>
+      <CollapsibleBox v-if="pageErrors.length" variant="red">
+        <template #title>Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
           <p class="font-semibold">Page {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
-      </div>
+      </CollapsibleBox>
 
       <div class="space-y-3">
         <div
@@ -193,6 +188,7 @@ import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
+import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
 import { useProviders } from '../../composables/useProviders'
 import type { DayEntry, PageLogEntry } from '@hermes/types'

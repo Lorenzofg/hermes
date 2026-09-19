@@ -4,15 +4,16 @@ import { eq } from 'drizzle-orm'
 import { stringify } from 'csv-stringify/sync'
 import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry } from '@hermes/types'
 
-// CSV headers use PJe-Calc column naming convention
-const CSV_HEADERS = [
-  'data',
-  'entrada1', 'saida1',
-  'entrada2', 'saida2',
-  'entrada3', 'saida3',
-  'entrada4', 'saida4',
-  'entrada5', 'saida5',
-  'entrada6', 'saida6',
+// CSV headers must match PJe-Calc's expected import format exactly
+// (capitalized, with the accent on "Saída") — see ExemploJornadaCartaoDePonto.csv
+const CSV_COLUMNS = [
+  { key: 'data',     header: 'Data' },
+  { key: 'entrada1', header: 'Entrada1' }, { key: 'saida1', header: 'Saída1' },
+  { key: 'entrada2', header: 'Entrada2' }, { key: 'saida2', header: 'Saída2' },
+  { key: 'entrada3', header: 'Entrada3' }, { key: 'saida3', header: 'Saída3' },
+  { key: 'entrada4', header: 'Entrada4' }, { key: 'saida4', header: 'Saída4' },
+  { key: 'entrada5', header: 'Entrada5' }, { key: 'saida5', header: 'Saída5' },
+  { key: 'entrada6', header: 'Entrada6' }, { key: 'saida6', header: 'Saída6' },
 ]
 
 export function generateCsv(days: DayEntry[]): string {
@@ -33,7 +34,7 @@ export function generateCsv(days: DayEntry[]): string {
 
   return stringify(rows, {
     header: true,
-    columns: CSV_HEADERS,
+    columns: CSV_COLUMNS,
     delimiter: ';',
     cast: { string: (value) => ({ value: value ?? '' }) },
   })
