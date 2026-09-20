@@ -17,6 +17,8 @@ const routes = [
   { path: '/payslip',       name: 'payslip-home',     component: () => import('../views/payslip/HomeView.vue') },
   { path: '/payslip/:id',   name: 'payslip-detail',   component: () => import('../views/payslip/DetailView.vue') },
 
+  { path: '/pdf-cut',       name: 'pdf-cut',          component: () => import('../views/PdfCutView.vue') },
+
   { path: '/history',       name: 'history',          component: () => import('../views/HistoryView.vue') },
 ]
 

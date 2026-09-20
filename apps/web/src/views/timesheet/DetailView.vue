@@ -54,6 +54,7 @@ import axios from 'axios'
 import ResultTable from '../../components/ResultTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
+import { sortByDate } from '../../lib/competence'
 import type { AnalyzeTimesheetResponse } from '@hermes/types'
 
 const route = useRoute()
@@ -65,7 +66,7 @@ const pageErrors = computed(() => result.value?.pageLog.filter((p) => p.status =
 onMounted(async () => {
   try {
     const { data } = await axios.get<AnalyzeTimesheetResponse>(`/api/timesheet/analyses/${route.params.id}`)
-    result.value = data
+    result.value = { ...data, days: sortByDate(data.days) }
   } catch {
     result.value = null
   } finally {

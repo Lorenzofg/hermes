@@ -23,14 +23,7 @@
       <UploadZone v-model:file="file" />
 
       <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
-        <div class="flex items-end gap-4">
-          <ProviderPicker v-model="provider" :providers="providers" />
-          <PageRangeInput
-            v-if="file?.type === 'application/pdf'"
-            v-model:from="pageFrom"
-            v-model:to="pageTo"
-          />
-        </div>
+        <ProviderPicker v-model="provider" :providers="providers" />
 
         <button
           :disabled="!file || loading"
@@ -182,10 +175,10 @@ import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
-import PageRangeInput from '../../components/PageRangeInput.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
+import { sortByDate } from '../../lib/competence'
 import type { DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
@@ -205,8 +198,6 @@ const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'erro
 
 const step     = ref<Step>('upload')
 const file     = ref<File | null>(null)
-const pageFrom = ref<number | null>(null)
-const pageTo   = ref<number | null>(null)
 const provider = ref<AIProvider>('claude')
 
 // Default to whichever provider the user has actually configured, rather
@@ -229,7 +220,7 @@ const savedPeople    = ref<{ name: string; totalDays: number; personId: number }
 async function runAnalysis() {
   if (!file.value) return
 
-  const result = await analyzePreview(file.value, provider.value, pageFrom.value, pageTo.value)
+  const result = await analyzePreview(file.value, provider.value)
   if (!result) return
 
   fileName.value = result.fileName
@@ -237,7 +228,7 @@ async function runAnalysis() {
   pageLog.value  = result.pageLog
   editablePeople.value = result.people.map((p) => ({
     name:     p.name,
-    days:     p.days.map((d) => ({
+    days:     sortByDate(p.days).map((d) => ({
       date:   d.date,
       shifts: [...d.shifts, ...Array.from({ length: Math.max(0, 6 - d.shifts.length) }, () => ({ clockIn: '', clockOut: '' }))].slice(0, 6),
     })),
@@ -278,8 +269,6 @@ async function confirmAndSave() {
 function reset() {
   step.value           = 'upload'
   file.value           = null
-  pageFrom.value       = null
-  pageTo.value         = null
   editablePeople.value = []
   fileName.value       = ''
   usage.value          = null

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { processTimesheet } from './processor.js'
 import { generateCsv, saveAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
-import { MAX_PDF_BYTES, parsePageRangeQuery } from '../../shared/pdf.js'
+import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { requireAuth } from '../../shared/auth.js'
 import { getCredentials } from '../settings/service.js'
 import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
@@ -13,12 +13,11 @@ const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
 export async function timesheetController(app: FastifyInstance) {
 
   // POST /api/timesheet/preview
-  app.post<{ Querystring: { provider?: AIProvider; pageFrom?: string; pageTo?: string } }>(
+  app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview',
     { preHandler: requireAuth },
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
-      const pageRange = parsePageRangeQuery(request.query.pageFrom, request.query.pageTo)
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
@@ -40,12 +39,7 @@ export async function timesheetController(app: FastifyInstance) {
       for await (const chunk of file.file) chunks.push(chunk)
       const base64 = Buffer.concat(chunks).toString('base64')
 
-      let result
-      try {
-        result = await processTimesheet(base64, file.mimetype, provider, credentials, undefined, pageRange)
-      } catch (err: any) {
-        return reply.status(400).send({ error: err?.message ?? 'Processing failed.' })
-      }
+      const result = await processTimesheet(base64, file.mimetype, provider, credentials)
       const csvContent = generateCsv(result.days)
 
       const response: AnalyzeTimesheetResponse & { fileName: string; usage: typeof result.usage } = {
@@ -63,12 +57,11 @@ export async function timesheetController(app: FastifyInstance) {
   )
 
   // POST /api/timesheet/preview-stream  (SSE)
-  app.post<{ Querystring: { provider?: AIProvider; pageFrom?: string; pageTo?: string } }>(
+  app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview-stream',
     { preHandler: requireAuth },
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
-      const pageRange = parsePageRangeQuery(request.query.pageFrom, request.query.pageTo)
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
@@ -103,7 +96,7 @@ export async function timesheetController(app: FastifyInstance) {
       try {
         const result = await processTimesheet(base64, mimeType, provider, credentials, (current, total) => {
           sendEvent(reply, { type: 'progress', current, total })
-        }, pageRange)
+        })
         const csvContent = generateCsv(result.days)
         sendEvent(reply, {
           type: 'result',

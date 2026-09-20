@@ -12,8 +12,6 @@ export function useBatchTimesheet() {
   async function analyzePreview(
     file: File,
     provider: AIProvider,
-    pageFrom?: number | null,
-    pageTo?: number | null,
   ): Promise<AnalyzeBatchTimesheetResponse | null> {
     loading.value  = true
     error.value    = null
@@ -23,11 +21,7 @@ export function useBatchTimesheet() {
       const form = new FormData()
       form.append('file', file)
 
-      const params = new URLSearchParams({ provider })
-      if (pageFrom) params.set('pageFrom', String(pageFrom))
-      if (pageTo) params.set('pageTo', String(pageTo))
-
-      const response = await fetch(`/api/timesheet-batch/preview-stream?${params}`, {
+      const response = await fetch(`/api/timesheet-batch/preview-stream?provider=${provider}`, {
         method: 'POST',
         headers: authHeader(),
         body: form,

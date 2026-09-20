@@ -84,6 +84,7 @@ import axios from 'axios'
 import ResultTable from '../../components/ResultTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
+import { sortByDate } from '../../lib/competence'
 import type { DayEntry, PageLogEntry } from '@hermes/types'
 
 interface PersonDetail {
@@ -114,7 +115,7 @@ const pageErrors = computed(() => analysis.value?.pageLog.filter((p) => p.status
 onMounted(async () => {
   try {
     const { data } = await axios.get<BatchAnalysis>(`/api/timesheet-batch/analyses/${route.params.id}`)
-    analysis.value = data
+    analysis.value = { ...data, people: data.people.map((p) => ({ ...p, days: sortByDate(p.days) })) }
   } catch {
     analysis.value = null
   } finally {

@@ -12,8 +12,6 @@ export function useTimesheet() {
   async function analyzePreview(
     file: File,
     provider: AIProvider,
-    pageFrom?: number | null,
-    pageTo?: number | null,
   ): Promise<(AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null> {
     loading.value = true
     error.value = null
@@ -23,11 +21,7 @@ export function useTimesheet() {
       const form = new FormData()
       form.append('file', file)
 
-      const params = new URLSearchParams({ provider })
-      if (pageFrom) params.set('pageFrom', String(pageFrom))
-      if (pageTo) params.set('pageTo', String(pageTo))
-
-      const response = await fetch(`/api/timesheet/preview-stream?${params}`, {
+      const response = await fetch(`/api/timesheet/preview-stream?provider=${provider}`, {
         method: 'POST',
         headers: authHeader(),
         body: form,

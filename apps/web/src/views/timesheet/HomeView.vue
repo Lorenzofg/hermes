@@ -23,14 +23,7 @@
       <UploadZone v-model:file="file" />
 
       <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
-        <div class="flex items-end gap-4">
-          <ProviderPicker v-model="provider" :providers="providers" />
-          <PageRangeInput
-            v-if="file?.type === 'application/pdf'"
-            v-model:from="pageFrom"
-            v-model:to="pageTo"
-          />
-        </div>
+        <ProviderPicker v-model="provider" :providers="providers" />
 
         <button
           :disabled="!file || loading"
@@ -141,9 +134,9 @@ import ResultTable from '../../components/ResultTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
-import PageRangeInput from '../../components/PageRangeInput.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
+import { sortByDate } from '../../lib/competence'
 import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
@@ -155,8 +148,6 @@ const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'erro
 
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
-const pageFrom = ref<number | null>(null)
-const pageTo = ref<number | null>(null)
 const provider = ref<AIProvider>('claude')
 
 // Default to whichever provider the user has actually configured, rather
@@ -182,14 +173,14 @@ const finalResult = ref<AnalyzeTimesheetResponse>({
 async function runAnalysis() {
   if (!file.value) return
 
-  const result = await analyzePreview(file.value, provider.value, pageFrom.value, pageTo.value)
+  const result = await analyzePreview(file.value, provider.value)
   if (!result) return
 
   fileName.value = result.fileName
   warnings.value = result.warnings
   pageLog.value  = result.pageLog
   usage.value    = result.usage
-  editableDays.value = result.days.map((d) => ({
+  editableDays.value = sortByDate(result.days).map((d) => ({
     date: d.date,
     shifts: [
       ...d.shifts,
@@ -225,8 +216,6 @@ async function confirmAndSave() {
 function reset() {
   step.value = 'upload'
   file.value = null
-  pageFrom.value = null
-  pageTo.value = null
   editableDays.value = []
   warnings.value = []
   pageLog.value = []

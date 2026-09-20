@@ -23,14 +23,7 @@
       <UploadZone v-model:file="file" />
 
       <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
-        <div class="flex items-end gap-4">
-          <ProviderPicker v-model="provider" :providers="providers" />
-          <PageRangeInput
-            v-if="file?.type === 'application/pdf'"
-            v-model:from="pageFrom"
-            v-model:to="pageTo"
-          />
-        </div>
+        <ProviderPicker v-model="provider" :providers="providers" />
 
         <button
           :disabled="!file || loading"
@@ -132,7 +125,6 @@ import PayslipTable from '../../components/PayslipTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
-import PageRangeInput from '../../components/PageRangeInput.vue'
 import { usePayslip } from '../../composables/usePayslip'
 import { useProviders } from '../../composables/useProviders'
 import { sortByCompetence } from '../../lib/competence'
@@ -147,8 +139,6 @@ const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'erro
 
 const step = ref<Step>('upload')
 const file = ref<File | null>(null)
-const pageFrom = ref<number | null>(null)
-const pageTo = ref<number | null>(null)
 const provider = ref<AIProvider>('claude')
 
 // Default to whichever provider the user has actually configured, rather
@@ -173,7 +163,7 @@ const currentPayslip = computed(() => payslips.value[currentIndex.value] ?? null
 async function runAnalysis() {
   if (!file.value) return
 
-  const result = await analyzePreview(file.value, provider.value, pageFrom.value, pageTo.value)
+  const result = await analyzePreview(file.value, provider.value)
   if (!result) return
 
   payslips.value = sortByCompetence(result.payslips)
@@ -196,8 +186,6 @@ async function confirmAndSave() {
 function reset() {
   step.value = 'upload'
   file.value = null
-  pageFrom.value = null
-  pageTo.value = null
   payslips.value = []
   warnings.value = []
   pageLog.value = []

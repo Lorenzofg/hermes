@@ -32,6 +32,13 @@
           >
             Payslip
           </RouterLink>
+          <RouterLink
+            to="/pdf-cut"
+            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            :class="$route.name === 'pdf-cut' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
+          >
+            Cut PDF
+          </RouterLink>
           <div class="w-px h-4 bg-zinc-700" />
           <RouterLink
             to="/history"

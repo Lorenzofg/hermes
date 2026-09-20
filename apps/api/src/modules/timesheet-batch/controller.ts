@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { processBatchTimesheet } from './processor.js'
 import { saveBatchAnalysis, listBatchAnalyses, getBatchAnalysis, getBatchPersonCsv } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
-import { MAX_PDF_BYTES, parsePageRangeQuery } from '../../shared/pdf.js'
+import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { requireAuth } from '../../shared/auth.js'
 import { getCredentials } from '../settings/service.js'
 import type { BatchPersonResult, PageLogEntry, AIProvider } from '@hermes/types'
@@ -13,12 +13,11 @@ const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
 export async function timesheetBatchController(app: FastifyInstance) {
 
   // POST /api/timesheet-batch/preview-stream  (SSE)
-  app.post<{ Querystring: { provider?: AIProvider; pageFrom?: string; pageTo?: string } }>(
+  app.post<{ Querystring: { provider?: AIProvider } }>(
     '/preview-stream',
     { preHandler: requireAuth },
     async (request, reply) => {
       const provider = request.query.provider ?? 'claude'
-      const pageRange = parsePageRangeQuery(request.query.pageFrom, request.query.pageTo)
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
@@ -53,7 +52,7 @@ export async function timesheetBatchController(app: FastifyInstance) {
       try {
         const result = await processBatchTimesheet(base64, mimeType, provider, credentials, (current, total) => {
           sendEvent(reply, { type: 'progress', current, total })
-        }, pageRange)
+        })
         sendEvent(reply, { type: 'result', people: result.people, pageLog: result.pageLog, fileName, usage: result.usage })
       } catch (err: any) {
         sendEvent(reply, { type: 'error', message: err?.message ?? 'Processing failed.' })
