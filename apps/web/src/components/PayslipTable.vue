@@ -87,7 +87,7 @@
               {{ formatCurrency(findItem(p.earnings, desc)!.value) }}
               <span v-if="findItem(p.earnings, desc)!.reference" class="text-zinc-500"> ({{ findItem(p.earnings, desc)!.reference }})</span>
             </template>
-            <span v-else class="text-zinc-600">—</span>
+            <span v-else class="text-zinc-600">{{ formatCurrency(0) }}</span>
           </td>
 
           <td
@@ -99,7 +99,7 @@
               - {{ formatCurrency(findItem(p.deductions, desc)!.value) }}
               <span v-if="findItem(p.deductions, desc)!.reference" class="text-red-400/60"> ({{ findItem(p.deductions, desc)!.reference }})</span>
             </template>
-            <span v-else class="text-zinc-600">—</span>
+            <span v-else class="text-zinc-600">{{ formatCurrency(0) }}</span>
           </td>
 
           <td class="px-4 py-3 font-mono text-xs text-zinc-100 font-semibold text-right whitespace-nowrap">{{ formatCurrency(p.totalEarnings) }}</td>
@@ -162,7 +162,7 @@ const totalColumns: { key: string; label: string; align?: 'right'; value: (p: Pa
 ]
 
 function formatCurrency(value: number | null | undefined): string {
-  if (value == null || isNaN(value)) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const v = value == null || isNaN(value) ? 0 : value
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 </script>
