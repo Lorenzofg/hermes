@@ -35,7 +35,6 @@
               </button>
             </th>
           </template>
-          <th class="px-2 py-3 w-8"></th>
         </tr>
       </thead>
       <tbody>
@@ -72,16 +71,6 @@
               />
             </td>
           </template>
-
-          <td class="px-2 py-2 text-center">
-            <button
-              class="text-zinc-600 hover:text-red-400 transition-colors text-xs"
-              title="Remove row"
-              @click="removeDay(idx)"
-            >
-              ✕
-            </button>
-          </td>
         </tr>
       </tbody>
     </table>
@@ -125,10 +114,6 @@ function addDay() {
     date: '',
     shifts: Array.from({ length: 6 }, () => ({ clockIn: '', clockOut: '' })),
   })
-}
-
-function removeDay(idx: number) {
-  editableDays.value.splice(idx, 1)
 }
 
 const { copiedColumn, copyColumn } = useCopyColumn()
