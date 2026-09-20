@@ -1,6 +1,10 @@
 <template>
   <div class="space-y-6">
 
+    <p class="text-xs text-zinc-500">
+      Timesheet analyzes a single person's time card (cartão de ponto) — one PDF/image with one employee's clock-ins and clock-outs.
+    </p>
+
     <!-- Step 1: Upload -->
     <section class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-6">
       <div class="flex items-center justify-between">
@@ -19,31 +23,7 @@
       <UploadZone v-model:file="file" />
 
       <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
-        <div v-if="visibleProviders.length > 1" class="space-y-1.5">
-          <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">AI Provider</label>
-          <div class="flex rounded-lg border border-zinc-700 overflow-hidden">
-            <button
-              v-for="p in visibleProviders"
-              :key="p.value"
-              class="px-4 py-2 text-xs font-semibold transition-colors"
-              :class="provider === p.value
-                ? 'bg-zinc-600 text-zinc-100'
-                : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'"
-              @click="provider = p.value"
-            >
-              {{ p.label }}
-            </button>
-          </div>
-        </div>
-        <div v-else-if="visibleProviders.length === 1" class="space-y-1.5">
-          <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">AI Provider</label>
-          <p class="text-sm text-zinc-300">{{ visibleProviders[0].label }}</p>
-        </div>
-        <p v-else-if="providers" class="text-xs text-amber-400">
-          No provider configured —
-          <RouterLink to="/settings" class="underline underline-offset-2 hover:text-amber-300">set one up in Settings</RouterLink>.
-        </p>
-        <div v-else />
+        <ProviderPicker v-model="provider" :providers="providers" />
 
         <button
           :disabled="!file || loading"
@@ -57,18 +37,7 @@
         </button>
       </div>
 
-      <!-- Progress -->
-      <div v-if="loading && progress" class="space-y-1.5">
-        <p class="text-xs text-zinc-400">
-          Processing page {{ progress.current }} of {{ progress.total }}...
-        </p>
-        <div class="w-full bg-zinc-700 rounded-full h-1.5">
-          <div
-            class="bg-white h-1.5 rounded-full transition-all"
-            :style="{ width: `${(progress.current / progress.total) * 100}%` }"
-          />
-        </div>
-      </div>
+      <ProgressBar :loading="loading" :progress="progress" />
     </section>
 
     <!-- Error -->
@@ -150,11 +119,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
 import ResultTable from '../../components/ResultTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
+import ProviderPicker from '../../components/ProviderPicker.vue'
+import ProgressBar from '../../components/ProgressBar.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
 import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
@@ -164,14 +134,6 @@ type Step = 'upload' | 'review' | 'saved'
 const { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv } = useTimesheet()
 const { providers } = useProviders()
 
-const allProviders = [
-  { value: 'claude' as const, label: 'Claude' },
-  { value: 'gpt'   as const, label: 'GPT' },
-  { value: 'gemini' as const, label: 'Gemini' },
-]
-const visibleProviders = computed(() =>
-  providers.value ? allProviders.filter((pr) => providers.value![pr.value]) : [],
-)
 const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
 
 const step = ref<Step>('upload')

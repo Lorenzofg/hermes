@@ -98,6 +98,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useCopyColumn } from '../composables/useCopyColumn'
 import type { DayEntry, Shift } from '@hermes/types'
 
 const props = defineProps<{ days: DayEntry[] }>()
@@ -129,28 +130,5 @@ function removeDay(idx: number) {
   editableDays.value.splice(idx, 1)
 }
 
-const copiedColumn = ref<string | null>(null)
-let copiedTimeout: ReturnType<typeof setTimeout> | undefined
-
-async function copyColumn(key: string, values: string[]) {
-  const text = values.join('\n')
-
-  try {
-    await navigator.clipboard.writeText(text)
-  } catch {
-    // Fallback for browsers/contexts without Clipboard API access
-    const textarea = document.createElement('textarea')
-    textarea.value = text
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
-    document.body.appendChild(textarea)
-    textarea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textarea)
-  }
-
-  copiedColumn.value = key
-  clearTimeout(copiedTimeout)
-  copiedTimeout = setTimeout(() => { copiedColumn.value = null }, 1500)
-}
+const { copiedColumn, copyColumn } = useCopyColumn()
 </script>

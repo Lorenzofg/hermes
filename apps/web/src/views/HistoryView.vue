@@ -30,8 +30,9 @@
           <tr
             v-for="(item, idx) in list"
             :key="`${item.type}-${item.id}`"
-            class="border-b border-zinc-700/60 last:border-0 hover:bg-zinc-700/40 transition-colors"
+            class="border-b border-zinc-700/60 last:border-0 hover:bg-zinc-700/40 transition-colors cursor-pointer"
             :class="idx % 2 === 0 ? 'bg-transparent' : 'bg-zinc-700/20'"
+            @click="router.push(item.detailPath)"
           >
             <td class="px-4 py-3 font-mono text-xs text-zinc-500">{{ item.id }}</td>
             <td class="px-4 py-3 text-xs">
@@ -49,14 +50,7 @@
               <span class="text-zinc-400">↓{{ formatTokens(item.outputTokens) }}</span>
             </td>
             <td class="px-4 py-3 font-mono text-xs text-zinc-400">{{ formatDate(item.createdAt) }}</td>
-            <td class="px-4 py-3 text-right">
-              <RouterLink
-                :to="item.detailPath"
-                class="text-xs text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
-              >
-                View
-              </RouterLink>
-            </td>
+            <td class="px-4 py-3 text-right text-xs text-zinc-500">→</td>
           </tr>
         </tbody>
       </table>
@@ -67,8 +61,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+
+const router = useRouter()
 
 interface HistoryItem {
   id: number

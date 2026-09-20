@@ -17,44 +17,22 @@
     <div v-else-if="!analysis" class="text-sm text-red-400">Analysis not found.</div>
 
     <template v-else>
-      <div
-        v-if="analysis.warnings.length"
-        class="border border-amber-700 bg-amber-900/30 rounded-lg px-5 py-4"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-amber-400 mb-2">
-          Warnings ({{ analysis.warnings.length }})
-        </p>
+      <CollapsibleBox v-if="analysis.warnings.length" variant="amber">
+        <template #title>Warnings ({{ analysis.warnings.length }})</template>
         <ul class="space-y-1">
           <li v-for="(w, i) in analysis.warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
         </ul>
-      </div>
+      </CollapsibleBox>
 
-      <div
-        v-if="pageErrors.length"
-        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
-          Page Errors ({{ pageErrors.length }} of {{ analysis.pageLog.length }} pages)
-        </p>
+      <CollapsibleBox v-if="pageErrors.length" variant="red">
+        <template #title>Page Errors ({{ pageErrors.length }} of {{ analysis.pageLog.length }} pages)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
           <p class="font-semibold">Page {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
-      </div>
+      </CollapsibleBox>
 
-      <!-- Pagination if multiple payslips -->
-      <div v-if="analysis.payslips.length > 1" class="flex items-center gap-2">
-        <button
-          v-for="(_, i) in analysis.payslips"
-          :key="i"
-          class="px-3 py-1 text-xs rounded transition-colors"
-          :class="currentIndex === i ? 'bg-zinc-600 text-zinc-100' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300 border border-zinc-700'"
-          @click="currentIndex = i"
-        >
-          {{ i + 1 }}
-        </button>
-        <span class="text-xs text-zinc-500 ml-1">{{ analysis.payslips.length }} holerites</span>
-      </div>
+      <PayslipTable v-if="analysis.payslips.length > 1" v-model="currentIndex" :payslips="analysis.payslips" />
 
       <PayslipCard v-if="currentPayslip" :payslip="currentPayslip" />
     </template>
@@ -67,6 +45,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import PayslipCard from '../../components/PayslipCard.vue'
+import PayslipTable from '../../components/PayslipTable.vue'
+import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import type { Payslip, PageLogEntry } from '@hermes/types'
 
 interface AnalysisDetail {

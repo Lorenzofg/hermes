@@ -16,12 +16,22 @@
       >
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-semibold text-zinc-200">{{ p.label }}</h3>
-          <span
-            class="text-xs px-2 py-0.5 rounded font-medium uppercase tracking-wide"
-            :class="settings?.[p.key]?.configured ? 'bg-emerald-900/50 text-emerald-300' : 'bg-zinc-700 text-zinc-400'"
-          >
-            {{ settings?.[p.key]?.configured ? 'Configured' : 'Not configured' }}
-          </span>
+          <div class="flex items-center gap-2">
+            <span
+              class="text-xs px-2 py-0.5 rounded font-medium uppercase tracking-wide"
+              :class="settings?.[p.key]?.configured ? 'bg-emerald-900/50 text-emerald-300' : 'bg-zinc-700 text-zinc-400'"
+            >
+              {{ settings?.[p.key]?.configured ? 'Configured' : 'Not configured' }}
+            </span>
+            <button
+              v-if="settings?.[p.key]?.configured"
+              :disabled="loading"
+              class="text-xs text-zinc-500 hover:text-red-400 transition-colors underline underline-offset-2 disabled:opacity-50"
+              @click="handleClear(p.key)"
+            >
+              Clear
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -103,5 +113,11 @@ async function handleSave() {
       form[p.key].model = ''
     }
   }
+}
+
+async function handleClear(key: AIProvider) {
+  if (!confirm(`Clear the saved API key and model for ${key}?`)) return
+  saved.value = false
+  if (await saveSettings({ [key]: { clear: true } })) saved.value = true
 }
 </script>

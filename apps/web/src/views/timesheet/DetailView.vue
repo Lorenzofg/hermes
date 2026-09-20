@@ -26,30 +26,20 @@
     <div v-else-if="!result" class="text-sm text-red-400">Analysis not found.</div>
 
     <template v-else>
-      <div
-        v-if="result.warnings.length"
-        class="border border-amber-700 bg-amber-900/30 rounded-lg px-5 py-4"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-amber-400 mb-2">
-          Warnings ({{ result.warnings.length }})
-        </p>
+      <CollapsibleBox v-if="result.warnings.length" variant="amber">
+        <template #title>Warnings ({{ result.warnings.length }})</template>
         <ul class="space-y-1">
           <li v-for="(w, i) in result.warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
         </ul>
-      </div>
+      </CollapsibleBox>
 
-      <div
-        v-if="pageErrors.length"
-        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 space-y-2"
-      >
-        <p class="text-xs font-semibold tracking-wide uppercase text-red-400">
-          Page Errors ({{ pageErrors.length }} of {{ result.pageLog.length }} pages)
-        </p>
+      <CollapsibleBox v-if="pageErrors.length" variant="red">
+        <template #title>Page Errors ({{ pageErrors.length }} of {{ result.pageLog.length }} pages)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
           <p class="font-semibold">Page {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
-      </div>
+      </CollapsibleBox>
 
       <ResultTable :result="result" />
     </template>
@@ -62,6 +52,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import ResultTable from '../../components/ResultTable.vue'
+import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import type { AnalyzeTimesheetResponse } from '@hermes/types'
 

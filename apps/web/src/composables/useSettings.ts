@@ -13,6 +13,7 @@ export type SettingsMap = Record<AIProvider, ProviderStatus>
 interface ProviderInput {
   apiKey?: string
   model?: string
+  clear?: boolean
 }
 
 export interface SaveSettingsInput {

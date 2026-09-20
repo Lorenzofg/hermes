@@ -7,6 +7,7 @@ import type { AIProvider } from '@hermes/types'
 interface ProviderInput {
   apiKey?: string
   model?: string
+  clear?: boolean // wipes the key + model for this provider, ignoring apiKey/model above
 }
 
 export interface SaveSettingsInput {
@@ -45,12 +46,29 @@ export async function getMaskedSettings(userId: number): Promise<Record<AIProvid
 export async function saveSettings(userId: number, input: SaveSettingsInput) {
   const values: Record<string, unknown> = { userId }
 
-  if (input.claude?.apiKey) values.anthropicApiKeyEnc = encrypt(input.claude.apiKey)
-  if (input.claude?.model)  values.anthropicModel = input.claude.model
-  if (input.gpt?.apiKey)    values.openaiApiKeyEnc = encrypt(input.gpt.apiKey)
-  if (input.gpt?.model)     values.openaiModel = input.gpt.model
-  if (input.gemini?.apiKey) values.geminiApiKeyEnc = encrypt(input.gemini.apiKey)
-  if (input.gemini?.model)  values.geminiModel = input.gemini.model
+  if (input.claude?.clear) {
+    values.anthropicApiKeyEnc = null
+    values.anthropicModel = null
+  } else {
+    if (input.claude?.apiKey) values.anthropicApiKeyEnc = encrypt(input.claude.apiKey)
+    if (input.claude?.model)  values.anthropicModel = input.claude.model
+  }
+
+  if (input.gpt?.clear) {
+    values.openaiApiKeyEnc = null
+    values.openaiModel = null
+  } else {
+    if (input.gpt?.apiKey) values.openaiApiKeyEnc = encrypt(input.gpt.apiKey)
+    if (input.gpt?.model)  values.openaiModel = input.gpt.model
+  }
+
+  if (input.gemini?.clear) {
+    values.geminiApiKeyEnc = null
+    values.geminiModel = null
+  } else {
+    if (input.gemini?.apiKey) values.geminiApiKeyEnc = encrypt(input.gemini.apiKey)
+    if (input.gemini?.model)  values.geminiModel = input.gemini.model
+  }
 
   const updateSet = { ...values }
   delete updateSet.userId
