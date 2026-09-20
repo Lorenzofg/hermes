@@ -127,6 +127,7 @@ import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
 import { usePayslip } from '../../composables/usePayslip'
 import { useProviders } from '../../composables/useProviders'
+import { sortByCompetence } from '../../lib/competence'
 import type { Payslip, PageLogEntry, AIProvider } from '@hermes/types'
 
 type Step = 'upload' | 'review' | 'saved'
@@ -165,7 +166,7 @@ async function runAnalysis() {
   const result = await analyzePreview(file.value, provider.value)
   if (!result) return
 
-  payslips.value = result.payslips
+  payslips.value = sortByCompetence(result.payslips)
   warnings.value = result.warnings
   pageLog.value  = result.pageLog
   fileName.value = result.fileName

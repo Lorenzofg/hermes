@@ -47,6 +47,7 @@ import axios from 'axios'
 import PayslipCard from '../../components/PayslipCard.vue'
 import PayslipTable from '../../components/PayslipTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
+import { sortByCompetence } from '../../lib/competence'
 import type { Payslip, PageLogEntry } from '@hermes/types'
 
 interface AnalysisDetail {
@@ -70,7 +71,7 @@ const currentPayslip = computed(() => analysis.value?.payslips[currentIndex.valu
 onMounted(async () => {
   try {
     const { data } = await axios.get<AnalysisDetail>(`/api/payslip/analyses/${route.params.id}`)
-    analysis.value = data
+    analysis.value = { ...data, payslips: sortByCompetence(data.payslips) }
   } catch {
     analysis.value = null
   } finally {
