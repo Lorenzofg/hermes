@@ -58,7 +58,7 @@
           </span>
         </h2>
         <button
-          v-if="currentPayslip"
+          v-if="payslips.length"
           :disabled="loading"
           class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
           @click="confirmAndSave"
@@ -82,12 +82,10 @@
         </div>
       </CollapsibleBox>
 
-      <PayslipTable v-if="payslips.length > 1" v-model="currentIndex" :payslips="payslips" />
-
-      <p v-if="!currentPayslip" class="text-sm text-zinc-500">
+      <p v-if="!payslips.length" class="text-sm text-zinc-500">
         No payslip could be extracted from this document. Check the errors/warnings above, or start over with a different file.
       </p>
-      <PayslipCard v-else :payslip="currentPayslip" />
+      <PayslipTable v-else :payslips="payslips" />
     </section>
 
     <!-- Step 3: Saved -->
@@ -110,7 +108,7 @@
           </button>
         </div>
 
-        <PayslipCard v-if="currentPayslip" :payslip="currentPayslip" />
+        <PayslipTable v-if="payslips.length" :payslips="payslips" />
       </div>
     </section>
 
@@ -120,7 +118,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import UploadZone from '../../components/UploadZone.vue'
-import PayslipCard from '../../components/PayslipCard.vue'
 import PayslipTable from '../../components/PayslipTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import ProviderPicker from '../../components/ProviderPicker.vue'
@@ -155,10 +152,7 @@ const warnings = ref<string[]>([])
 const pageLog = ref<PageLogEntry[]>([])
 const fileName = ref('')
 const savedId = ref<number | null>(null)
-const currentIndex = ref(0)
 const usage = ref<{ inputTokens: number; outputTokens: number } | null>(null)
-
-const currentPayslip = computed(() => payslips.value[currentIndex.value] ?? null)
 
 async function runAnalysis() {
   if (!file.value) return
@@ -171,7 +165,6 @@ async function runAnalysis() {
   pageLog.value  = result.pageLog
   fileName.value = result.fileName
   usage.value    = result.usage
-  currentIndex.value = 0
   step.value = 'review'
 }
 
@@ -192,7 +185,6 @@ function reset() {
   fileName.value = ''
   savedId.value = null
   usage.value = null
-  currentIndex.value = 0
   error.value = null
 }
 </script>

@@ -32,9 +32,7 @@
         </div>
       </CollapsibleBox>
 
-      <PayslipTable v-if="analysis.payslips.length > 1" v-model="currentIndex" :payslips="analysis.payslips" />
-
-      <PayslipCard v-if="currentPayslip" :payslip="currentPayslip" />
+      <PayslipTable :payslips="analysis.payslips" />
     </template>
 
   </div>
@@ -44,7 +42,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
-import PayslipCard from '../../components/PayslipCard.vue'
 import PayslipTable from '../../components/PayslipTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { sortByCompetence } from '../../lib/competence'
@@ -63,10 +60,7 @@ interface AnalysisDetail {
 const route = useRoute()
 const analysis = ref<AnalysisDetail | null>(null)
 const loading = ref(true)
-const currentIndex = ref(0)
 const pageErrors = computed(() => analysis.value?.pageLog.filter((p) => p.status === 'error') ?? [])
-
-const currentPayslip = computed(() => analysis.value?.payslips[currentIndex.value] ?? null)
 
 onMounted(async () => {
   try {
