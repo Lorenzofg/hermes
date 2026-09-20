@@ -103,6 +103,25 @@ export function useTimesheet() {
     }
   }
 
+  // Overwrites a saved analysis's days — used from History to fix a wrong
+  // row or clear a value after the fact.
+  async function updateAnalysis(analysisId: number, days: DayEntry[]): Promise<{ csvContent: string } | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data } = await axios.put<{ csvContent: string }>(`/api/timesheet/analyses/${analysisId}`, { days })
+      return data
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e)
+        ? (e.response?.data?.error ?? 'Failed to save.')
+        : 'Unexpected error.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   function downloadCsv(csvContent: string, analysisId?: number) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -125,5 +144,5 @@ export function useTimesheet() {
     }
   }
 
-  return { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv, exportCsv }
+  return { loading, error, progress, analyzePreview, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
 }

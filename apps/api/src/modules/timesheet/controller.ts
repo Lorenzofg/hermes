@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { processTimesheet } from './processor.js'
-import { generateCsv, saveAnalysis, listAnalyses, getAnalysis } from './service.js'
+import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { requireAuth } from '../../shared/auth.js'
@@ -162,6 +162,26 @@ export async function timesheetController(app: FastifyInstance) {
 
     return reply.send(analysis)
   })
+
+  // PUT /api/timesheet/analyses/:id — overwrite a saved analysis's days
+  app.put<{ Params: { id: string }; Body: { days: DayEntry[] } }>(
+    '/analyses/:id',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const id = Number(request.params.id)
+      if (isNaN(id)) return reply.status(400).send({ error: 'Invalid ID.' })
+
+      const { days } = request.body
+      if (!days || !Array.isArray(days)) {
+        return reply.status(400).send({ error: 'No days provided.' })
+      }
+
+      const result = await updateAnalysis(id, request.user.id, days)
+      if (!result) return reply.status(404).send({ error: 'Analysis not found.' })
+
+      return reply.send(result)
+    },
+  )
 
   // GET /api/timesheet/analyses/:id/csv
   app.get<{ Params: { id: string } }>('/analyses/:id/csv', { preHandler: requireAuth }, async (request, reply) => {

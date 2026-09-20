@@ -3,7 +3,7 @@
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-zinc-700">
-          <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400 w-32">
+          <th class="px-2 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">
             <button
               class="flex items-center gap-1 hover:text-zinc-100 transition-colors"
               :title="copiedColumn === 'date' ? 'Copied!' : 'Copy column'"
@@ -14,7 +14,7 @@
             </button>
           </th>
           <template v-for="i in 6" :key="i">
-            <th class="px-2 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
+            <th class="px-1 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
               <button
                 class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
                 :title="copiedColumn === `in${i}` ? 'Copied!' : 'Copy column'"
@@ -24,7 +24,7 @@
                 <span class="normal-case">{{ copiedColumn === `in${i}` ? '✓' : '⧉' }}</span>
               </button>
             </th>
-            <th class="px-2 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
+            <th class="px-1 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
               <button
                 class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
                 :title="copiedColumn === `out${i}` ? 'Copied!' : 'Copy column'"
@@ -35,7 +35,7 @@
               </button>
             </th>
           </template>
-          <th class="px-3 py-3 w-10"></th>
+          <th class="px-2 py-3 w-8"></th>
         </tr>
       </thead>
       <tbody>
@@ -45,37 +45,38 @@
           class="border-b border-zinc-700/60 last:border-0"
           :class="idx % 2 === 0 ? 'bg-transparent' : 'bg-zinc-700/20'"
         >
-          <td class="px-4 py-2">
+          <td class="px-2 py-2">
             <input
               v-model="day.date"
               type="text"
               placeholder="dd/MM/yyyy"
-              class="w-full min-w-[92px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+              class="w-full min-w-[78px] bg-zinc-700 border border-zinc-600 rounded px-1.5 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
             />
           </td>
 
           <template v-for="t in 6" :key="t">
-            <td class="px-2 py-2">
+            <td class="px-1 py-2">
               <input
                 v-model="day.shifts[t - 1].clockIn"
                 type="text"
                 placeholder="HH:mm"
-                class="w-full min-w-[64px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+                class="w-full min-w-[52px] bg-zinc-700 border border-zinc-600 rounded px-1 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
               />
             </td>
-            <td class="px-2 py-2">
+            <td class="px-1 py-2">
               <input
                 v-model="day.shifts[t - 1].clockOut"
                 type="text"
                 placeholder="HH:mm"
-                class="w-full min-w-[64px] bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+                class="w-full min-w-[52px] bg-zinc-700 border border-zinc-600 rounded px-1 py-1 text-xs font-mono text-zinc-100 text-center focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
               />
             </td>
           </template>
 
-          <td class="px-3 py-2 text-center">
+          <td class="px-2 py-2 text-center">
             <button
               class="text-zinc-600 hover:text-red-400 transition-colors text-xs"
+              title="Remove row"
               @click="removeDay(idx)"
             >
               ✕

@@ -52,6 +52,21 @@ interface SaveParams {
   outputTokens: number
 }
 
+function dayToRecord(analysisId: number, day: DayEntry) {
+  const s = [...day.shifts]
+  while (s.length < 6) s.push({ clockIn: '', clockOut: '' })
+  return {
+    analysisId,
+    date:      day.date,
+    clockIn1:  s[0].clockIn,  clockOut1: s[0].clockOut,
+    clockIn2:  s[1].clockIn,  clockOut2: s[1].clockOut,
+    clockIn3:  s[2].clockIn,  clockOut3: s[2].clockOut,
+    clockIn4:  s[3].clockIn,  clockOut4: s[3].clockOut,
+    clockIn5:  s[4].clockIn,  clockOut5: s[4].clockOut,
+    clockIn6:  s[5].clockIn,  clockOut6: s[5].clockOut,
+  }
+}
+
 export async function saveAnalysis(params: SaveParams) {
   const { userId, provider, fileName, days, warnings, pageLog, csvContent, inputTokens, outputTokens } = params
 
@@ -61,25 +76,31 @@ export async function saveAnalysis(params: SaveParams) {
     .returning()
 
   if (days.length > 0) {
-    await db.insert(timesheetRecords).values(
-      days.map((day) => {
-        const s = [...day.shifts]
-        while (s.length < 6) s.push({ clockIn: '', clockOut: '' })
-        return {
-          analysisId: record.id,
-          date:       day.date,
-          clockIn1:  s[0].clockIn,  clockOut1: s[0].clockOut,
-          clockIn2:  s[1].clockIn,  clockOut2: s[1].clockOut,
-          clockIn3:  s[2].clockIn,  clockOut3: s[2].clockOut,
-          clockIn4:  s[3].clockIn,  clockOut4: s[3].clockOut,
-          clockIn5:  s[4].clockIn,  clockOut5: s[4].clockOut,
-          clockIn6:  s[5].clockIn,  clockOut6: s[5].clockOut,
-        }
-      }),
-    )
+    await db.insert(timesheetRecords).values(days.map((day) => dayToRecord(record.id, day)))
   }
 
   return record
+}
+
+// Overwrites a saved analysis's days — lets the user fix a wrong row or
+// clear a value in History after the fact, not just during the initial review.
+export async function updateAnalysis(id: number, userId: number, days: DayEntry[]) {
+  const [existing] = await db
+    .select({ id: timesheetAnalyses.id })
+    .from(timesheetAnalyses)
+    .where(and(eq(timesheetAnalyses.id, id), eq(timesheetAnalyses.userId, userId)))
+  if (!existing) return null
+
+  const csvContent = generateCsv(days)
+
+  await db.delete(timesheetRecords).where(eq(timesheetRecords.analysisId, id))
+  if (days.length > 0) {
+    await db.insert(timesheetRecords).values(days.map((day) => dayToRecord(id, day)))
+  }
+
+  await db.update(timesheetAnalyses).set({ totalDays: days.length, csvContent }).where(eq(timesheetAnalyses.id, id))
+
+  return { csvContent }
 }
 
 export async function listAnalyses(userId: number) {

@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import { useAuth } from './useAuth'
-import type { BatchPersonResult, AnalyzeBatchTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
+import type { BatchPersonResult, AnalyzeBatchTimesheetResponse, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 export function useBatchTimesheet() {
   const { authHeader } = useAuth()
@@ -101,6 +101,28 @@ export function useBatchTimesheet() {
     }
   }
 
+  // Overwrites one person's saved days — used from History to fix a wrong
+  // row or clear a value after the fact.
+  async function updatePersonDays(analysisId: number, personId: number, days: DayEntry[]): Promise<{ csvContent: string } | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data } = await axios.put<{ csvContent: string }>(
+        `/api/timesheet-batch/analyses/${analysisId}/people/${personId}`,
+        { days },
+      )
+      return data
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e)
+        ? (e.response?.data?.error ?? 'Failed to save.')
+        : 'Unexpected error.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   // A plain <a href> can't carry the Authorization header this route now
   // requires, so the CSV is fetched via axios (which does) and turned into
   // a client-side blob download instead.
@@ -117,5 +139,5 @@ export function useBatchTimesheet() {
     URL.revokeObjectURL(url)
   }
 
-  return { loading, error, progress, analyzePreview, saveAnalysis, downloadPersonCsv }
+  return { loading, error, progress, analyzePreview, saveAnalysis, updatePersonDays, downloadPersonCsv }
 }

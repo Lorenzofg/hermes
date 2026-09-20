@@ -49,6 +49,13 @@
             <div class="flex items-center gap-3">
               <button
                 class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
+                :disabled="saving"
+                @click.stop="handleSavePerson(person)"
+              >
+                {{ saving ? 'Saving...' : 'Save' }}
+              </button>
+              <button
+                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
                 @click.stop="downloadPersonCsv(Number(route.params.id), person.id, person.personName)"
               >
                 Export CSV
@@ -68,7 +75,7 @@
               </ul>
             </div>
 
-            <ResultTable :result="{ days: person.days, csvContent: person.csvContent, totalDays: person.totalDays, warnings: person.warnings, pageLog: [] }" />
+            <EditableTable v-model:days="person.days" />
           </div>
         </div>
       </div>
@@ -81,7 +88,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
-import ResultTable from '../../components/ResultTable.vue'
+import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
 import { sortByDate } from '../../lib/competence'
@@ -106,7 +113,7 @@ interface BatchAnalysis {
 }
 
 const route    = useRoute()
-const { downloadPersonCsv } = useBatchTimesheet()
+const { downloadPersonCsv, updatePersonDays, loading: saving } = useBatchTimesheet()
 const loading  = ref(true)
 const analysis = ref<BatchAnalysis | null>(null)
 const expanded = ref<Set<number>>(new Set())
@@ -129,5 +136,12 @@ function togglePerson(id: number) {
   } else {
     expanded.value.add(id)
   }
+}
+
+async function handleSavePerson(person: PersonDetail) {
+  const updated = await updatePersonDays(Number(route.params.id), person.id, person.days)
+  if (!updated) return
+  person.csvContent = updated.csvContent
+  person.totalDays = person.days.length
 }
 </script>

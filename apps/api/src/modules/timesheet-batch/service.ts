@@ -2,7 +2,7 @@ import { db } from '../../db/index.js'
 import { batchTimesheetAnalyses, batchTimesheetPeople, batchTimesheetRecords } from './schema.js'
 import { eq, and } from 'drizzle-orm'
 import { generateCsv } from '../timesheet/service.js'
-import type { BatchPersonResult, PageLogEntry, AIProvider } from '@hermes/types'
+import type { BatchPersonResult, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 interface SaveBatchParams {
   userId: number
@@ -95,6 +95,43 @@ export async function getBatchAnalysis(id: number, userId: number) {
   )
 
   return { ...analysis, people: peopleWithDays }
+}
+
+// Overwrites one person's days within a batch — lets the user fix a wrong
+// row or clear a value in History after the fact, not just during review.
+export async function updateBatchPerson(personId: number, userId: number, days: DayEntry[]) {
+  const [existing] = await db
+    .select({ id: batchTimesheetPeople.id })
+    .from(batchTimesheetPeople)
+    .innerJoin(batchTimesheetAnalyses, eq(batchTimesheetAnalyses.id, batchTimesheetPeople.analysisId))
+    .where(and(eq(batchTimesheetPeople.id, personId), eq(batchTimesheetAnalyses.userId, userId)))
+  if (!existing) return null
+
+  const csvContent = generateCsv(days)
+
+  await db.delete(batchTimesheetRecords).where(eq(batchTimesheetRecords.personId, personId))
+  if (days.length > 0) {
+    await db.insert(batchTimesheetRecords).values(
+      days.map((day) => {
+        const s = [...day.shifts]
+        while (s.length < 6) s.push({ clockIn: '', clockOut: '' })
+        return {
+          personId,
+          date:      day.date,
+          clockIn1:  s[0].clockIn,  clockOut1: s[0].clockOut,
+          clockIn2:  s[1].clockIn,  clockOut2: s[1].clockOut,
+          clockIn3:  s[2].clockIn,  clockOut3: s[2].clockOut,
+          clockIn4:  s[3].clockIn,  clockOut4: s[3].clockOut,
+          clockIn5:  s[4].clockIn,  clockOut5: s[4].clockOut,
+          clockIn6:  s[5].clockIn,  clockOut6: s[5].clockOut,
+        }
+      }),
+    )
+  }
+
+  await db.update(batchTimesheetPeople).set({ totalDays: days.length, csvContent }).where(eq(batchTimesheetPeople.id, personId))
+
+  return { csvContent }
 }
 
 export async function getBatchPersonCsv(personId: number, userId: number) {

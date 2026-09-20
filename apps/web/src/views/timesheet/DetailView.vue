@@ -14,6 +14,14 @@
         </RouterLink>
         <button
           v-if="result"
+          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          :disabled="saving"
+          @click="handleSave"
+        >
+          {{ saving ? 'Saving...' : 'Save changes' }}
+        </button>
+        <button
+          v-if="result"
           class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
           @click="handleDownload"
         >
@@ -41,7 +49,7 @@
         </div>
       </CollapsibleBox>
 
-      <ResultTable :result="result" />
+      <EditableTable v-model:days="editableDays" />
     </template>
 
   </div>
@@ -51,15 +59,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
-import ResultTable from '../../components/ResultTable.vue'
+import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { sortByDate } from '../../lib/competence'
-import type { AnalyzeTimesheetResponse } from '@hermes/types'
+import type { AnalyzeTimesheetResponse, DayEntry } from '@hermes/types'
 
 const route = useRoute()
-const { downloadCsv } = useTimesheet()
+const { downloadCsv, updateAnalysis, loading: saving } = useTimesheet()
 const result = ref<AnalyzeTimesheetResponse | null>(null)
+const editableDays = ref<DayEntry[]>([])
 const loading = ref(true)
 const pageErrors = computed(() => result.value?.pageLog.filter((p) => p.status === 'error') ?? [])
 
@@ -67,6 +76,7 @@ onMounted(async () => {
   try {
     const { data } = await axios.get<AnalyzeTimesheetResponse>(`/api/timesheet/analyses/${route.params.id}`)
     result.value = { ...data, days: sortByDate(data.days) }
+    editableDays.value = result.value.days
   } catch {
     result.value = null
   } finally {
@@ -77,5 +87,11 @@ onMounted(async () => {
 function handleDownload() {
   if (!result.value?.csvContent) return
   downloadCsv(result.value.csvContent, Number(route.params.id))
+}
+
+async function handleSave() {
+  const updated = await updateAnalysis(Number(route.params.id), editableDays.value)
+  if (!updated || !result.value) return
+  result.value = { ...result.value, days: editableDays.value, csvContent: updated.csvContent, totalDays: editableDays.value.length }
 }
 </script>

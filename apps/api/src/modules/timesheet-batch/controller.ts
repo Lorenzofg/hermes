@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import { processBatchTimesheet } from './processor.js'
-import { saveBatchAnalysis, listBatchAnalyses, getBatchAnalysis, getBatchPersonCsv } from './service.js'
+import { saveBatchAnalysis, listBatchAnalyses, getBatchAnalysis, getBatchPersonCsv, updateBatchPerson } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { requireAuth } from '../../shared/auth.js'
 import { getCredentials } from '../settings/service.js'
-import type { BatchPersonResult, PageLogEntry, AIProvider } from '@hermes/types'
+import type { BatchPersonResult, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
@@ -93,6 +93,26 @@ export async function timesheetBatchController(app: FastifyInstance) {
 
     return reply.send(analysis)
   })
+
+  // PUT /api/timesheet-batch/analyses/:id/people/:personId — overwrite one person's days
+  app.put<{ Params: { id: string; personId: string }; Body: { days: DayEntry[] } }>(
+    '/analyses/:id/people/:personId',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const personId = Number(request.params.personId)
+      if (isNaN(personId)) return reply.status(400).send({ error: 'Invalid person ID.' })
+
+      const { days } = request.body
+      if (!days || !Array.isArray(days)) {
+        return reply.status(400).send({ error: 'No days provided.' })
+      }
+
+      const result = await updateBatchPerson(personId, request.user.id, days)
+      if (!result) return reply.status(404).send({ error: 'Person not found.' })
+
+      return reply.send(result)
+    },
+  )
 
   // GET /api/timesheet-batch/analyses/:id/people/:personId/csv
   app.get<{ Params: { id: string; personId: string } }>(
