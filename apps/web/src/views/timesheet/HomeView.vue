@@ -57,13 +57,22 @@
             {{ editableDays.length }} days
           </span>
         </h2>
-        <button
-          :disabled="loading"
-          class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
-          @click="confirmAndSave"
-        >
-          {{ loading ? 'Saving...' : 'Confirm & Save' }}
-        </button>
+        <div class="flex gap-2">
+          <button
+            :disabled="loading"
+            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            @click="handleExportCsv"
+          >
+            Export CSV
+          </button>
+          <button
+            :disabled="loading"
+            class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
+            @click="confirmAndSave"
+          >
+            {{ loading ? 'Saving...' : 'Confirm & Save' }}
+          </button>
+        </div>
       </div>
 
       <CollapsibleBox v-if="warnings.length" variant="amber">
@@ -131,7 +140,7 @@ import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } fro
 
 type Step = 'upload' | 'review' | 'saved'
 
-const { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv } = useTimesheet()
+const { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
 const { providers } = useProviders()
 
 const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
@@ -179,6 +188,11 @@ async function runAnalysis() {
   }))
 
   step.value = 'review'
+}
+
+async function handleExportCsv() {
+  const csvContent = await exportCsv(editableDays.value)
+  if (csvContent) downloadCsv(csvContent)
 }
 
 async function confirmAndSave() {

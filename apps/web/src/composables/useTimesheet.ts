@@ -113,5 +113,17 @@ export function useTimesheet() {
     URL.revokeObjectURL(url)
   }
 
-  return { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv }
+  // Generates a CSV from the current (possibly edited) days without saving
+  // anything — for "export without committing to history".
+  async function exportCsv(days: DayEntry[]): Promise<string | null> {
+    try {
+      const { data } = await axios.post<{ csvContent: string }>('/api/timesheet/export-csv', { days })
+      return data.csvContent
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Failed to export.') : 'Unexpected error.'
+      return null
+    }
+  }
+
+  return { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv, exportCsv }
 }

@@ -91,7 +91,15 @@
                 {{ person.warnings.length }} warning{{ person.warnings.length !== 1 ? 's' : '' }}
               </span>
             </div>
-            <span class="text-xs text-zinc-500">{{ person.expanded ? '▲' : '▼' }}</span>
+            <div class="flex items-center gap-3">
+              <button
+                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
+                @click.stop="handleExportPersonCsv(person)"
+              >
+                Export CSV
+              </button>
+              <span class="text-xs text-zinc-500">{{ person.expanded ? '▲' : '▼' }}</span>
+            </div>
           </div>
 
           <div v-if="person.expanded" class="border-t border-zinc-700 p-4 space-y-3">
@@ -168,6 +176,7 @@ import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'
+import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
 import type { DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
 
@@ -181,6 +190,7 @@ interface EditablePerson {
 }
 
 const { loading, error, progress, analyzePreview, saveAnalysis, downloadPersonCsv } = useBatchTimesheet()
+const { exportCsv, downloadCsv } = useTimesheet()
 const { providers } = useProviders()
 
 const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
@@ -226,6 +236,11 @@ async function runAnalysis() {
   }))
 
   step.value = 'review'
+}
+
+async function handleExportPersonCsv(person: EditablePerson) {
+  const csvContent = await exportCsv(person.days)
+  if (csvContent) downloadCsv(csvContent)
 }
 
 async function confirmAndSave() {

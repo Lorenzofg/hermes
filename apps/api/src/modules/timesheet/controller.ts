@@ -134,6 +134,19 @@ export async function timesheetController(app: FastifyInstance) {
     },
   )
 
+  // POST /api/timesheet/export-csv — generate a CSV without saving to history
+  app.post<{ Body: { days: DayEntry[] } }>(
+    '/export-csv',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { days } = request.body
+      if (!days || !Array.isArray(days) || days.length === 0) {
+        return reply.status(400).send({ error: 'No days provided.' })
+      }
+      return reply.send({ csvContent: generateCsv(days) })
+    },
+  )
+
   // GET /api/timesheet/analyses
   app.get('/analyses', { preHandler: requireAuth }, async (request, reply) => {
     return reply.send(await listAnalyses(request.user.id))
