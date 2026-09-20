@@ -20,6 +20,8 @@ export function usePayslip() {
   async function analyzePreview(
     file: File,
     provider: AIProvider,
+    pageFrom?: number | null,
+    pageTo?: number | null,
   ): Promise<PreviewResponse | null> {
     loading.value = true
     error.value = null
@@ -29,7 +31,11 @@ export function usePayslip() {
       const form = new FormData()
       form.append('file', file)
 
-      const response = await fetch(`/api/payslip/preview-stream?provider=${provider}`, {
+      const params = new URLSearchParams({ provider })
+      if (pageFrom) params.set('pageFrom', String(pageFrom))
+      if (pageTo) params.set('pageTo', String(pageTo))
+
+      const response = await fetch(`/api/payslip/preview-stream?${params}`, {
         method: 'POST',
         headers: authHeader(),
         body: form,

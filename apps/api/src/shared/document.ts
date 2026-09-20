@@ -1,5 +1,5 @@
 import { callClaude, callGpt, callGemini, type TokenUsage, type ProviderCredentials } from './ai.js'
-import { splitPdfIntoPages } from './pdf.js'
+import { splitPdfIntoPages, type PageRange } from './pdf.js'
 import type { AIProvider } from '@hermes/types'
 
 const PAGE_CONCURRENCY = 6
@@ -39,9 +39,11 @@ export async function analyzeByPage<T>(
   provider: AIProvider,
   credentials: ProviderCredentials,
   onProgress?: (current: number, total: number) => void,
+  pageRange?: PageRange,
 ): Promise<PagedAnalysis<T>> {
   const isPdf = mimeType === 'application/pdf'
-  const pages = isPdf ? await splitPdfIntoPages(fileBase64) : [fileBase64]
+  const pages = isPdf ? await splitPdfIntoPages(fileBase64, pageRange) : [fileBase64]
+  const firstPageNumber = isPdf ? Math.max(1, pageRange?.from ?? 1) : 1
 
   const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
   const results: (T | undefined)[] = new Array(pages.length)
@@ -65,9 +67,9 @@ export async function analyzeByPage<T>(
         results[i] = result.data
         usage.inputTokens += result.usage.inputTokens
         usage.outputTokens += result.usage.outputTokens
-        pageLog[i] = { page: i + 1, status: 'ok' }
+        pageLog[i] = { page: firstPageNumber + i, status: 'ok' }
       } catch (err: any) {
-        pageLog[i] = { page: i + 1, status: 'error', detail: err?.message ?? String(err) }
+        pageLog[i] = { page: firstPageNumber + i, status: 'error', detail: err?.message ?? String(err) }
       }
 
       completed++
@@ -81,7 +83,7 @@ export async function analyzeByPage<T>(
   const pagesData: PageResult<T>[] = []
   for (let i = 0; i < results.length; i++) {
     const data = results[i]
-    if (data !== undefined) pagesData.push({ page: i + 1, data })
+    if (data !== undefined) pagesData.push({ page: firstPageNumber + i, data })
   }
 
   return { pages: pagesData, usage, pageLog }

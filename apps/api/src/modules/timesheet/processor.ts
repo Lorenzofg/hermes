@@ -1,6 +1,7 @@
 import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { TIMESHEET_PROMPT } from './prompt.js'
 import type { TokenUsage, ProviderCredentials } from '../../shared/ai.js'
+import type { PageRange } from '../../shared/pdf.js'
 import type { DayEntry, AIProvider } from '@hermes/types'
 
 interface RawResult {
@@ -21,6 +22,7 @@ export async function processTimesheet(
   provider: AIProvider,
   credentials: ProviderCredentials,
   onProgress?: (current: number, total: number) => void,
+  pageRange?: PageRange,
 ): Promise<ProcessResult> {
   const { pages, usage, pageLog } = await analyzeByPage<RawResult>(
     fileBase64,
@@ -29,6 +31,7 @@ export async function processTimesheet(
     provider,
     credentials,
     onProgress,
+    pageRange,
   )
 
   const dayMap = new Map<string, DayEntry>()

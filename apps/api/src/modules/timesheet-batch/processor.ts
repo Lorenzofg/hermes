@@ -1,6 +1,7 @@
 import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { BATCH_TIMESHEET_PROMPT } from './prompt.js'
 import type { TokenUsage, ProviderCredentials } from '../../shared/ai.js'
+import type { PageRange } from '../../shared/pdf.js'
 import type { BatchPersonResult, AIProvider } from '@hermes/types'
 
 interface RawResult {
@@ -19,6 +20,7 @@ export async function processBatchTimesheet(
   provider: AIProvider,
   credentials: ProviderCredentials,
   onProgress?: (current: number, total: number) => void,
+  pageRange?: PageRange,
 ): Promise<BatchProcessResult> {
   const { pages, usage, pageLog } = await analyzeByPage<RawResult>(
     fileBase64,
@@ -27,6 +29,7 @@ export async function processBatchTimesheet(
     provider,
     credentials,
     onProgress,
+    pageRange,
   )
 
   // Each page is normally one employee, but merge by name anyway in case a
