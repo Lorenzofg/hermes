@@ -10,12 +10,12 @@
 
       <UploadZone v-model:file="file" />
 
-      <div v-if="file" class="flex items-end justify-between gap-4">
+      <div v-if="file" class="flex items-end justify-between flex-wrap gap-4">
         <PageRangeInput v-model:from="pageFrom" v-model:to="pageTo" />
 
         <button
           :disabled="!canCut || loading"
-          class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
+          class="px-6 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors"
           :class="canCut && !loading
             ? 'bg-white text-zinc-900 hover:bg-zinc-100'
             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"

@@ -36,7 +36,7 @@
           >
             <td class="px-4 py-3 font-mono text-xs text-zinc-500">{{ item.id }}</td>
             <td class="px-4 py-3 text-xs">
-              <span class="px-2 py-0.5 rounded text-zinc-300 font-medium tracking-wide uppercase"
+              <span class="px-2 py-0.5 rounded text-zinc-300 font-medium tracking-wide uppercase whitespace-nowrap"
                 :class="typeBadge(item.type)">
                 {{ typeLabel(item.type) }}
               </span>

@@ -1,20 +1,20 @@
 <template>
   <div class="space-y-6">
 
-    <div class="flex items-center justify-between">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
+    <div class="flex items-center justify-between flex-wrap gap-y-2">
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400 whitespace-nowrap">
         Cartão de Ponto #{{ route.params.id }}
       </h2>
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
         <RouterLink
           to="/history"
-          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
         >
           Voltar
         </RouterLink>
         <button
           v-if="result"
-          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
           :disabled="saving"
           @click="handleSave"
         >
@@ -22,7 +22,7 @@
         </button>
         <button
           v-if="result"
-          class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
+          class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors whitespace-nowrap"
           @click="handleDownload"
         >
           Exportar CSV

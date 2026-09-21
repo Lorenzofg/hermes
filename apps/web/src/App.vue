@@ -10,31 +10,31 @@
           <p class="text-xs text-zinc-400 mt-0.5">Análise de Documentos — PJe-Calc</p>
         </RouterLink>
 
-        <nav class="flex items-center gap-6">
+        <nav class="flex items-center flex-wrap justify-end gap-x-4 gap-y-2">
           <RouterLink
             to="/timesheet"
-            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            class="text-xs font-medium uppercase whitespace-nowrap transition-colors"
             :class="$route.path === '/timesheet' || $route.path.startsWith('/timesheet/') ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Cartão de Ponto
           </RouterLink>
           <RouterLink
             to="/timesheet-batch"
-            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            class="text-xs font-medium uppercase whitespace-nowrap transition-colors"
             :class="$route.path === '/timesheet-batch' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Lote
           </RouterLink>
           <RouterLink
             to="/payslip"
-            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            class="text-xs font-medium uppercase whitespace-nowrap transition-colors"
             :class="$route.path.startsWith('/payslip') ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Holerite
           </RouterLink>
           <RouterLink
             to="/pdf-cut"
-            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            class="text-xs font-medium uppercase whitespace-nowrap transition-colors"
             :class="$route.name === 'pdf-cut' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Cortar PDF
@@ -42,23 +42,23 @@
           <div class="w-px h-4 bg-zinc-700" />
           <RouterLink
             to="/history"
-            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            class="text-xs font-medium uppercase whitespace-nowrap transition-colors"
             :class="$route.name === 'history' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Histórico
           </RouterLink>
           <RouterLink
             to="/settings"
-            class="text-xs font-medium tracking-wide uppercase transition-colors"
+            class="text-xs font-medium uppercase whitespace-nowrap transition-colors"
             :class="$route.name === 'settings' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'"
           >
             Configurações
           </RouterLink>
           <div class="w-px h-4 bg-zinc-700" />
           <div class="flex items-center gap-3">
-            <span class="text-xs text-zinc-500">{{ user?.email }}</span>
+            <span class="text-xs text-zinc-500 whitespace-nowrap">{{ user?.email }}</span>
             <button
-              class="text-xs font-medium tracking-wide uppercase text-zinc-400 hover:text-zinc-200 transition-colors"
+              class="text-xs font-medium uppercase whitespace-nowrap text-zinc-400 hover:text-zinc-200 transition-colors"
               @click="handleLogout"
             >
               Sair

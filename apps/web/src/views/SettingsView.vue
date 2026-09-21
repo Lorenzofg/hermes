@@ -14,11 +14,11 @@
         :key="p.key"
         class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4"
       >
-        <div class="flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-zinc-200">{{ p.label }}</h3>
+        <div class="flex items-center justify-between flex-wrap gap-y-2">
+          <h3 class="text-sm font-semibold text-zinc-200 whitespace-nowrap">{{ p.label }}</h3>
           <div class="flex items-center gap-2">
             <span
-              class="text-xs px-2 py-0.5 rounded font-medium uppercase tracking-wide"
+              class="text-xs px-2 py-0.5 rounded font-medium uppercase tracking-wide whitespace-nowrap"
               :class="settings?.[p.key]?.configured ? 'bg-emerald-900/50 text-emerald-300' : 'bg-zinc-700 text-zinc-400'"
             >
               {{ settings?.[p.key]?.configured ? 'Configurado' : 'Não configurado' }}
@@ -26,7 +26,7 @@
             <button
               v-if="settings?.[p.key]?.configured"
               :disabled="loading"
-              class="text-xs text-zinc-500 hover:text-red-400 transition-colors underline underline-offset-2 disabled:opacity-50"
+              class="text-xs text-zinc-500 hover:text-red-400 transition-colors underline underline-offset-2 disabled:opacity-50 whitespace-nowrap"
               @click="handleClear(p.key)"
             >
               Limpar

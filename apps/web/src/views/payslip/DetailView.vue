@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-6">
 
-    <div class="flex items-center justify-between">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
+    <div class="flex items-center justify-between flex-wrap gap-y-2">
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400 whitespace-nowrap">
         Análise de Holerite #{{ route.params.id }}
       </h2>
       <RouterLink
         to="/history"
-        class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+        class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
       >
         Voltar
       </RouterLink>

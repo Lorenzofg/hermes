@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-6">
 
-    <div class="flex items-center justify-between">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
+    <div class="flex items-center justify-between flex-wrap gap-y-2">
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400 whitespace-nowrap">
         Lote #{{ route.params.id }}
       </h2>
       <RouterLink
         to="/history"
-        class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+        class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
       >
         Voltar
       </RouterLink>
@@ -36,26 +36,26 @@
           class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden"
         >
           <div
-            class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-700/40 transition-colors"
+            class="flex items-center justify-between flex-wrap gap-y-2 px-4 py-3 cursor-pointer hover:bg-zinc-700/40 transition-colors"
             @click="togglePerson(person.id)"
           >
             <div class="flex items-center gap-3">
               <span class="text-sm font-semibold text-zinc-200">{{ person.personName }}</span>
-              <span class="text-xs text-zinc-500">{{ person.totalDays }} dias</span>
-              <span v-if="person.warnings.length" class="text-xs text-amber-400">
+              <span class="text-xs text-zinc-500 whitespace-nowrap">{{ person.totalDays }} dias</span>
+              <span v-if="person.warnings.length" class="text-xs text-amber-400 whitespace-nowrap">
                 {{ person.warnings.length }} aviso{{ person.warnings.length !== 1 ? 's' : '' }}
               </span>
             </div>
             <div class="flex items-center gap-3">
               <button
-                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
+                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2 whitespace-nowrap"
                 :disabled="saving"
                 @click.stop="handleSavePerson(person)"
               >
                 {{ saving ? 'Salvando...' : 'Salvar' }}
               </button>
               <button
-                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
+                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2 whitespace-nowrap"
                 @click.stop="downloadPersonCsv(Number(route.params.id), person.id, person.personName)"
               >
                 Exportar CSV

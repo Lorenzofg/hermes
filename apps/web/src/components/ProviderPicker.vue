@@ -5,7 +5,7 @@
       <button
         v-for="p in visibleProviders"
         :key="p.value"
-        class="px-4 py-2 text-xs font-semibold transition-colors"
+        class="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors"
         :class="modelValue === p.value
           ? 'bg-zinc-600 text-zinc-100'
           : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'"

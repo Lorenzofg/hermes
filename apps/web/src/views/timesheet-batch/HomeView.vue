@@ -22,12 +22,12 @@
 
       <UploadZone v-model:file="file" />
 
-      <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
+      <div v-if="step === 'upload'" class="flex items-end justify-between flex-wrap gap-4">
         <ProviderPicker v-model="provider" :providers="providers" />
 
         <button
           :disabled="!file || loading"
-          class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
+          class="px-6 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors"
           :class="file && !loading
             ? 'bg-white text-zinc-900 hover:bg-zinc-100'
             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
@@ -50,7 +50,7 @@
 
     <!-- Step 2: Review -->
     <section v-if="step === 'review'" class="space-y-4">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-y-2">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
           Passo 2 — Revisão
           <span class="ml-2 text-zinc-600 normal-case tracking-normal font-normal">
@@ -59,7 +59,7 @@
         </h2>
         <button
           :disabled="loading"
-          class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
+          class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50 whitespace-nowrap"
           @click="confirmAndSave"
         >
           {{ loading ? 'Salvando...' : 'Confirmar e Salvar' }}
@@ -81,19 +81,19 @@
           class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden"
         >
           <div
-            class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-700/40 transition-colors"
+            class="flex items-center justify-between flex-wrap gap-y-2 px-4 py-3 cursor-pointer hover:bg-zinc-700/40 transition-colors"
             @click="person.expanded = !person.expanded"
           >
             <div class="flex items-center gap-3">
               <span class="text-sm font-semibold text-zinc-200">{{ person.name }}</span>
-              <span class="text-xs text-zinc-500">{{ person.days.length }} dias</span>
-              <span v-if="person.warnings.length" class="text-xs text-amber-400">
+              <span class="text-xs text-zinc-500 whitespace-nowrap">{{ person.days.length }} dias</span>
+              <span v-if="person.warnings.length" class="text-xs text-amber-400 whitespace-nowrap">
                 {{ person.warnings.length }} aviso{{ person.warnings.length !== 1 ? 's' : '' }}
               </span>
             </div>
             <div class="flex items-center gap-3">
               <button
-                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
+                class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2 whitespace-nowrap"
                 @click.stop="handleExportPersonCsv(person)"
               >
                 Exportar CSV
@@ -123,7 +123,7 @@
       <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Passo 3 — Concluído</h2>
 
       <div class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-y-2">
           <div>
             <p class="text-sm font-semibold text-zinc-200">Análise em lote salva</p>
             <p class="text-xs text-zinc-500 mt-0.5">ID #{{ savedId }} — {{ savedPeople.length }} pessoas</p>
@@ -131,12 +131,12 @@
           <div class="flex gap-2">
             <RouterLink
               :to="`/timesheet-batch/${savedId}`"
-              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
             >
               Ver
             </RouterLink>
             <button
-              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
               @click="reset"
             >
               Nova Análise
@@ -148,14 +148,14 @@
           <div
             v-for="(person, i) in savedPeople"
             :key="i"
-            class="flex items-center justify-between py-2 border-b border-zinc-700 last:border-0"
+            class="flex items-center justify-between flex-wrap gap-y-2 py-2 border-b border-zinc-700 last:border-0"
           >
             <div>
               <p class="text-sm text-zinc-200">{{ person.name }}</p>
               <p class="text-xs text-zinc-500">{{ person.totalDays }} dias</p>
             </div>
             <button
-              class="px-3 py-1 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
+              class="px-3 py-1 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors whitespace-nowrap"
               @click="downloadPersonCsv(savedId!, person.personId, person.name)"
             >
               Exportar CSV

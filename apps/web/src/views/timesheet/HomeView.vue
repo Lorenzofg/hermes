@@ -22,30 +22,30 @@
 
       <div v-if="step === 'upload'" class="flex rounded-lg border border-zinc-700 overflow-hidden w-fit">
         <button
-          class="px-4 py-2 text-xs font-semibold transition-colors"
+          class="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors"
           :class="mode === 'real' ? 'bg-zinc-600 text-zinc-100' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'"
           @click="mode = 'real'"
         >
           Cartão Real
         </button>
         <button
-          class="px-4 py-2 text-xs font-semibold transition-colors"
+          class="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors"
           :class="mode === 'presumed' ? 'bg-zinc-600 text-zinc-100' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'"
           @click="mode = 'presumed'"
         >
-          Jornada Presumida
+          Presumida
         </button>
       </div>
 
       <template v-if="mode === 'real'">
         <UploadZone v-model:file="file" />
 
-        <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
+        <div v-if="step === 'upload'" class="flex items-end justify-between flex-wrap gap-4">
           <ProviderPicker v-model="provider" :providers="providers" />
 
           <button
             :disabled="!file || loading"
-            class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
+            class="px-6 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors"
             :class="file && !loading
               ? 'bg-white text-zinc-900 hover:bg-zinc-100'
               : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
@@ -90,12 +90,12 @@
           </div>
         </div>
 
-        <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
+        <div v-if="step === 'upload'" class="flex items-end justify-between flex-wrap gap-4">
           <ProviderPicker v-model="provider" :providers="providers" />
 
           <button
             :disabled="!canGeneratePresumed || loading"
-            class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
+            class="px-6 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors"
             :class="canGeneratePresumed && !loading
               ? 'bg-white text-zinc-900 hover:bg-zinc-100'
               : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
@@ -119,7 +119,7 @@
 
     <!-- Step 2: Review -->
     <section v-if="step === 'review'" class="space-y-4">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-y-2">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
           Passo 2 — Revisão
           <span class="ml-2 text-zinc-600 normal-case tracking-normal font-normal">
@@ -129,14 +129,14 @@
         <div class="flex gap-2">
           <button
             :disabled="loading"
-            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
             @click="handleExportCsv"
           >
             Exportar CSV
           </button>
           <button
             :disabled="loading"
-            class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
+            class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50 whitespace-nowrap"
             @click="confirmAndSave"
           >
             {{ loading ? 'Salvando...' : 'Confirmar e Salvar' }}
@@ -167,20 +167,20 @@
       <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Passo 3 — Concluído</h2>
 
       <div class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-y-2">
           <div>
             <p class="text-sm font-semibold text-zinc-200">Análise salva com sucesso</p>
             <p class="text-xs text-zinc-500 mt-0.5">ID #{{ savedId }}</p>
           </div>
           <div class="flex gap-2">
             <button
-              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
+              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
               @click="reset"
             >
               Nova Análise
             </button>
             <button
-              class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
+              class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors whitespace-nowrap"
               @click="downloadCsv(savedCsv, savedId!)"
             >
               Exportar CSV
