@@ -27,7 +27,7 @@
             <button
               class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
               :title="copiedColumn === `e:${desc}` ? 'Copiado!' : 'Copiar coluna'"
-              @click="copyColumn(`e:${desc}`, payslips.map((p) => String(findItem(p.earnings, desc)?.value ?? '')))"
+              @click="copyColumn(`e:${desc}`, payslips.map((p) => String(findItem(p.earnings, desc)?.value ?? 0)))"
             >
               {{ desc }}
               <span class="normal-case">{{ copiedColumn === `e:${desc}` ? '✓' : '⧉' }}</span>
@@ -42,7 +42,7 @@
             <button
               class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
               :title="copiedColumn === `d:${desc}` ? 'Copiado!' : 'Copiar coluna'"
-              @click="copyColumn(`d:${desc}`, payslips.map((p) => String(findItem(p.deductions, desc)?.value ?? '')))"
+              @click="copyColumn(`d:${desc}`, payslips.map((p) => String(findItem(p.deductions, desc)?.value ?? 0)))"
             >
               {{ desc }}
               <span class="normal-case">{{ copiedColumn === `d:${desc}` ? '✓' : '⧉' }}</span>
@@ -150,15 +150,15 @@ const fixedColumns: { key: string; label: string; align?: 'right'; value: (p: Pa
   { key: 'cpf', label: 'CPF', value: (p) => p.cpf ?? '' },
   { key: 'role', label: 'Cargo', value: (p) => p.role ?? '' },
   { key: 'admissionDate', label: 'Admissão', value: (p) => p.admissionDate ?? '' },
-  { key: 'baseSalary', label: 'Salário Base', align: 'right', value: (p) => String(p.baseSalary ?? '') },
+  { key: 'baseSalary', label: 'Salário Base', align: 'right', value: (p) => String(p.baseSalary ?? 0) },
 ]
 
 const totalColumns: { key: string; label: string; align?: 'right'; value: (p: Payslip) => string }[] = [
-  { key: 'totalEarnings', label: 'Total de Proventos', align: 'right', value: (p) => String(p.totalEarnings ?? '') },
-  { key: 'totalDeductions', label: 'Total de Descontos', align: 'right', value: (p) => String(p.totalDeductions ?? '') },
-  { key: 'netSalary', label: 'Salário Líquido', align: 'right', value: (p) => String(p.netSalary ?? '') },
-  { key: 'fgtsBase', label: 'Base FGTS', align: 'right', value: (p) => String(p.fgtsBase ?? '') },
-  { key: 'fgtsAmount', label: 'FGTS', align: 'right', value: (p) => String(p.fgtsAmount ?? '') },
+  { key: 'totalEarnings', label: 'Total de Proventos', align: 'right', value: (p) => String(p.totalEarnings ?? 0) },
+  { key: 'totalDeductions', label: 'Total de Descontos', align: 'right', value: (p) => String(p.totalDeductions ?? 0) },
+  { key: 'netSalary', label: 'Salário Líquido', align: 'right', value: (p) => String(p.netSalary ?? 0) },
+  { key: 'fgtsBase', label: 'Base FGTS', align: 'right', value: (p) => String(p.fgtsBase ?? 0) },
+  { key: 'fgtsAmount', label: 'FGTS', align: 'right', value: (p) => String(p.fgtsAmount ?? 0) },
 ]
 
 function formatCurrency(value: number | null | undefined): string {
