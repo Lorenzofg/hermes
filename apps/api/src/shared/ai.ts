@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 import { GoogleGenAI } from '@google/genai'
+import type { AIProvider } from '@hermes/types'
 
 export interface TokenUsage {
   inputTokens: number
@@ -94,6 +95,97 @@ export async function callClaude<T>(
       inputTokens:  response.usage.input_tokens
         + (response.usage.cache_creation_input_tokens ?? 0)
         + (response.usage.cache_read_input_tokens ?? 0),
+      outputTokens: response.usage.output_tokens,
+    },
+  }
+}
+
+// Plain text-in, JSON-out call — for prompts that don't analyze a document
+// (e.g. extracting a work-schedule pattern from a judge's determination
+// text), so there's no image/document content block to build.
+export async function callAIText<T>(
+  prompt: string,
+  userText: string,
+  provider: AIProvider,
+  credentials: ProviderCredentials,
+): Promise<AIResult<T>> {
+  if (provider === 'gpt') {
+    const client = new OpenAI({ apiKey: credentials.apiKey })
+    const response = await client.chat.completions.create({
+      model: credentials.model,
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: userText },
+      ],
+    })
+
+    const raw = response.choices[0].message.content ?? ''
+    const cleaned = extractJson(raw)
+    let parsed: T
+    try {
+      parsed = JSON.parse(cleaned) as T
+    } catch {
+      throw new Error(`A IA retornou uma resposta que não é JSON: ${cleaned.slice(0, 4000)}`)
+    }
+
+    return {
+      data: parsed,
+      usage: {
+        inputTokens:  response.usage?.prompt_tokens ?? 0,
+        outputTokens: response.usage?.completion_tokens ?? 0,
+      },
+    }
+  }
+
+  if (provider === 'gemini') {
+    const ai = new GoogleGenAI({ apiKey: credentials.apiKey })
+    const response = await ai.models.generateContent({
+      model: credentials.model,
+      contents: [{ role: 'user', parts: [{ text: userText }] }],
+      config: { systemInstruction: prompt, responseMimeType: 'application/json' },
+    })
+
+    const raw = response.text ?? ''
+    const cleaned = extractJson(raw)
+    let parsed: T
+    try {
+      parsed = JSON.parse(cleaned) as T
+    } catch {
+      throw new Error(`A IA retornou uma resposta que não é JSON: ${cleaned.slice(0, 4000)}`)
+    }
+
+    return {
+      data: parsed,
+      usage: {
+        inputTokens:  response.usageMetadata?.promptTokenCount ?? 0,
+        outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+      },
+    }
+  }
+
+  const client = new Anthropic({ apiKey: credentials.apiKey })
+  const response = await client.messages.create({
+    model: credentials.model,
+    max_tokens: 4096,
+    system: prompt,
+    messages: [{ role: 'user', content: userText }],
+  })
+
+  const textBlock = response.content.find((block) => block.type === 'text')
+  const raw = textBlock && 'text' in textBlock ? textBlock.text : ''
+  const cleaned = extractJson(raw)
+  let parsed: T
+  try {
+    parsed = JSON.parse(cleaned) as T
+  } catch {
+    throw new Error(`A IA retornou uma resposta que não é JSON: ${cleaned.slice(0, 4000)}`)
+  }
+
+  return {
+    data: parsed,
+    usage: {
+      inputTokens:  response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
     },
   }

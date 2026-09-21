@@ -71,6 +71,31 @@ export function useTimesheet() {
     }
   }
 
+  // Generates a "jornada presumida" — a judge's determination text describing
+  // a weekly work pattern, expanded into day entries across a manually-chosen
+  // date range, for periods with no real timesheet records.
+  async function analyzePresumed(
+    text: string,
+    dateFrom: string,
+    dateTo: string,
+    provider: AIProvider,
+  ): Promise<(AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data } = await axios.post('/api/timesheet/presumed-preview', { text, dateFrom, dateTo, provider })
+      return data
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e)
+        ? (e.response?.data?.error ?? 'Falha ao gerar a jornada presumida.')
+        : 'Erro inesperado.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function saveAnalysis(
     days: DayEntry[],
     provider: AIProvider,
@@ -144,5 +169,5 @@ export function useTimesheet() {
     }
   }
 
-  return { loading, error, progress, analyzePreview, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
+  return { loading, error, progress, analyzePreview, analyzePresumed, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
 }

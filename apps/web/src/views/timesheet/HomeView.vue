@@ -2,7 +2,7 @@
   <div class="space-y-6">
 
     <p class="text-xs text-zinc-500">
-      Cartão de Ponto analisa o cartão de ponto de uma única pessoa — um PDF/imagem com as entradas e saídas de um funcionário.
+      Cartão de Ponto analisa o cartão de ponto real de uma única pessoa (PDF/imagem), ou gera uma jornada presumida a partir do texto de uma determinação judicial, para períodos sem registro.
     </p>
 
     <!-- Step 1: Upload -->
@@ -20,22 +20,91 @@
         </span>
       </div>
 
-      <UploadZone v-model:file="file" />
-
-      <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
-        <ProviderPicker v-model="provider" :providers="providers" />
-
+      <div v-if="step === 'upload'" class="flex rounded-lg border border-zinc-700 overflow-hidden w-fit">
         <button
-          :disabled="!file || loading"
-          class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
-          :class="file && !loading
-            ? 'bg-white text-zinc-900 hover:bg-zinc-100'
-            : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
-          @click="runAnalysis"
+          class="px-4 py-2 text-xs font-semibold transition-colors"
+          :class="mode === 'real' ? 'bg-zinc-600 text-zinc-100' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'"
+          @click="mode = 'real'"
         >
-          {{ loading ? 'Analisando...' : 'Analisar' }}
+          Cartão Real
+        </button>
+        <button
+          class="px-4 py-2 text-xs font-semibold transition-colors"
+          :class="mode === 'presumed' ? 'bg-zinc-600 text-zinc-100' : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'"
+          @click="mode = 'presumed'"
+        >
+          Jornada Presumida
         </button>
       </div>
+
+      <template v-if="mode === 'real'">
+        <UploadZone v-model:file="file" />
+
+        <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
+          <ProviderPicker v-model="provider" :providers="providers" />
+
+          <button
+            :disabled="!file || loading"
+            class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
+            :class="file && !loading
+              ? 'bg-white text-zinc-900 hover:bg-zinc-100'
+              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
+            @click="runAnalysis"
+          >
+            {{ loading ? 'Analisando...' : 'Analisar' }}
+          </button>
+        </div>
+      </template>
+
+      <template v-else>
+        <p class="text-xs text-zinc-500 -mt-2">
+          Cole o trecho da decisão que descreve a jornada presumida e informe o período — os dias e horários são extraídos do texto, as datas ficam por sua conta.
+        </p>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Texto da determinação</label>
+          <textarea
+            v-model="presumedText"
+            rows="6"
+            placeholder="Cole aqui o trecho da decisão..."
+            class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">De</label>
+            <input
+              v-model="presumedDateFrom"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Até</label>
+            <input
+              v-model="presumedDateTo"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+        </div>
+
+        <div v-if="step === 'upload'" class="flex items-end justify-between gap-4">
+          <ProviderPicker v-model="provider" :providers="providers" />
+
+          <button
+            :disabled="!canGeneratePresumed || loading"
+            class="px-6 py-2 text-sm font-semibold rounded-lg transition-colors"
+            :class="canGeneratePresumed && !loading
+              ? 'bg-white text-zinc-900 hover:bg-zinc-100'
+              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
+            @click="runPresumedAnalysis"
+          >
+            {{ loading ? 'Gerando...' : 'Gerar Jornada' }}
+          </button>
+        </div>
+      </template>
 
       <ProgressBar :loading="loading" :progress="progress" />
     </section>
@@ -141,14 +210,22 @@ import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } fro
 
 type Step = 'upload' | 'review' | 'saved'
 
-const { loading, error, progress, analyzePreview, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
+const { loading, error, progress, analyzePreview, analyzePresumed, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
 const { providers } = useProviders()
 
 const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
 
+type Mode = 'real' | 'presumed'
+
 const step = ref<Step>('upload')
+const mode = ref<Mode>('real')
 const file = ref<File | null>(null)
 const provider = ref<AIProvider>('claude')
+
+const presumedText = ref('')
+const presumedDateFrom = ref('')
+const presumedDateTo = ref('')
+const canGeneratePresumed = computed(() => !!presumedText.value.trim() && !!presumedDateFrom.value && !!presumedDateTo.value)
 
 // Default to whichever provider the user has actually configured, rather
 // than always assuming Claude — otherwise Analyze silently fails for anyone
@@ -191,6 +268,37 @@ async function runAnalysis() {
   step.value = 'review'
 }
 
+function toBRDate(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+async function runPresumedAnalysis() {
+  if (!canGeneratePresumed.value) return
+
+  const result = await analyzePresumed(
+    presumedText.value,
+    toBRDate(presumedDateFrom.value),
+    toBRDate(presumedDateTo.value),
+    provider.value,
+  )
+  if (!result) return
+
+  fileName.value = result.fileName
+  warnings.value = result.warnings
+  pageLog.value  = result.pageLog
+  usage.value    = result.usage
+  editableDays.value = sortByDate(result.days).map((d) => ({
+    date: d.date,
+    shifts: [
+      ...d.shifts,
+      ...Array.from({ length: Math.max(0, 6 - d.shifts.length) }, () => ({ clockIn: '', clockOut: '' })),
+    ].slice(0, 6),
+  }))
+
+  step.value = 'review'
+}
+
 async function handleExportCsv() {
   const csvContent = await exportCsv(editableDays.value)
   if (csvContent) downloadCsv(csvContent)
@@ -215,7 +323,11 @@ async function confirmAndSave() {
 
 function reset() {
   step.value = 'upload'
+  mode.value = 'real'
   file.value = null
+  presumedText.value = ''
+  presumedDateFrom.value = ''
+  presumedDateTo.value = ''
   editableDays.value = []
   warnings.value = []
   pageLog.value = []

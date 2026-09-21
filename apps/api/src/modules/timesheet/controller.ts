@@ -1,11 +1,14 @@
 import type { FastifyInstance } from 'fastify'
 import { processTimesheet } from './processor.js'
 import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis } from './service.js'
+import { generatePresumedDays } from './presumed.js'
+import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
+import { callAIText } from '../../shared/ai.js'
 import { requireAuth } from '../../shared/auth.js'
 import { getCredentials } from '../settings/service.js'
-import type { AnalyzeTimesheetResponse, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
+import type { AnalyzeTimesheetResponse, DayEntry, Shift, PageLogEntry, AIProvider } from '@hermes/types'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
@@ -113,6 +116,70 @@ export async function timesheetController(app: FastifyInstance) {
       }
 
       endSSE(reply)
+    },
+  )
+
+  // POST /api/timesheet/presumed-preview — generates a "jornada presumida":
+  // given a judge's determination text describing a weekly work pattern
+  // (days + hours) for a period without real timesheet records, extracts
+  // that pattern with the AI and expands it into day entries across a
+  // manually-chosen date range.
+  app.post<{ Body: { text: string; dateFrom: string; dateTo: string; provider?: AIProvider } }>(
+    '/presumed-preview',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { text, dateFrom, dateTo } = request.body
+      const provider = request.body.provider ?? 'claude'
+
+      if (!text?.trim()) {
+        return reply.status(400).send({ error: 'O texto da determinação é obrigatório.' })
+      }
+      if (!dateFrom || !dateTo) {
+        return reply.status(400).send({ error: 'As datas de início e fim são obrigatórias.' })
+      }
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
+      }
+
+      let workDays: string[]
+      let shifts: Shift[]
+      let warnings: string[]
+      let usage: { inputTokens: number; outputTokens: number }
+      try {
+        const result = await callAIText<{ workDays?: string[]; shifts?: Shift[]; warnings?: string[] }>(
+          PRESUMED_SCHEDULE_PROMPT,
+          text,
+          provider,
+          credentials,
+        )
+        workDays = result.data.workDays ?? []
+        shifts   = result.data.shifts ?? []
+        warnings = result.data.warnings ?? []
+        usage    = result.usage
+      } catch (err: any) {
+        return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
+      }
+
+      if (workDays.length === 0 || shifts.length === 0) {
+        return reply.status(400).send({ error: 'Não foi possível identificar um padrão de jornada no texto informado.' })
+      }
+
+      const days = generatePresumedDays(workDays, shifts, dateFrom, dateTo)
+      const csvContent = generateCsv(days)
+
+      const response: AnalyzeTimesheetResponse & { fileName: string; usage: typeof usage } = {
+        days,
+        csvContent,
+        totalDays: days.length,
+        warnings,
+        pageLog: [],
+        fileName: `Jornada Presumida ${dateFrom}-${dateTo}`,
+        usage,
+      }
+
+      return reply.status(200).send(response)
     },
   )
 
