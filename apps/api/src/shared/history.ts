@@ -37,7 +37,7 @@ export async function getHistory(userId: number): Promise<HistoryItem[]> {
     createdAt:    r.createdAt.toISOString(),
     provider:     r.provider,
     fileName:     r.fileName,
-    summary:      `${r.totalDays} days`,
+    summary:      `${r.totalDays} dia${r.totalDays !== 1 ? 's' : ''}`,
     inputTokens:  r.inputTokens,
     outputTokens: r.outputTokens,
     detailPath:   `/timesheet/${r.id}`,

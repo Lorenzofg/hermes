@@ -2,21 +2,21 @@
   <div class="space-y-6">
 
     <p class="text-xs text-zinc-500">
-      Payslip analyzes a payslip (holerite) — extracts earnings, deductions and totals from one or more payslips in the document.
+      Holerite analisa um holerite — extrai proventos, descontos e totais de um ou mais holerites no documento.
     </p>
 
     <!-- Step 1: Upload -->
     <section class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-          Step 1 — Upload
+          Passo 1 — Enviar arquivo
         </h2>
         <span
           v-if="step !== 'upload'"
           class="text-xs text-zinc-500 underline underline-offset-2 cursor-pointer hover:text-zinc-300 transition-colors"
           @click="reset"
         >
-          Start over
+          Recomeçar
         </span>
       </div>
 
@@ -33,7 +33,7 @@
             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
           @click="runAnalysis"
         >
-          {{ loading ? 'Analyzing...' : 'Analyze' }}
+          {{ loading ? 'Analisando...' : 'Analisar' }}
         </button>
       </div>
 
@@ -52,9 +52,9 @@
     <section v-if="step === 'review'" class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-          Step 2 — Review
+          Passo 2 — Revisão
           <span v-if="payslips.length > 1" class="ml-2 text-zinc-600 normal-case tracking-normal font-normal">
-            {{ payslips.length }} payslips found
+            {{ payslips.length }} holerites encontrados
           </span>
         </h2>
         <button
@@ -63,34 +63,34 @@
           class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
           @click="confirmAndSave"
         >
-          {{ loading ? 'Saving...' : `Confirm & Save${payslips.length > 1 ? ` All (${payslips.length})` : ''}` }}
+          {{ loading ? 'Salvando...' : `Confirmar e Salvar${payslips.length > 1 ? ` Todos (${payslips.length})` : ''}` }}
         </button>
       </div>
 
       <CollapsibleBox v-if="warnings.length" variant="amber">
-        <template #title>AI Warnings ({{ warnings.length }})</template>
+        <template #title>Avisos da IA ({{ warnings.length }})</template>
         <ul class="space-y-1">
           <li v-for="(w, i) in warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
         </ul>
       </CollapsibleBox>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)</template>
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ pageLog.length }} páginas)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="font-semibold">Página {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
       </CollapsibleBox>
 
       <p v-if="!payslips.length" class="text-sm text-zinc-500">
-        No payslip could be extracted from this document. Check the errors/warnings above, or start over with a different file.
+        Nenhum holerite pôde ser extraído deste documento. Verifique os erros/avisos acima, ou recomece com outro arquivo.
       </p>
       <PayslipTable v-else :payslips="payslips" />
     </section>
 
     <!-- Step 3: Saved -->
     <section v-if="step === 'saved'" class="space-y-4">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Step 3 — Done</h2>
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Passo 3 — Concluído</h2>
 
       <div class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <div class="flex items-center justify-between">
@@ -98,13 +98,13 @@
             <p class="text-sm font-semibold text-zinc-200">
               {{ payslips.length }} holerite{{ payslips.length > 1 ? 's' : '' }} salvos com sucesso
             </p>
-            <p class="text-xs text-zinc-500 mt-0.5">Analysis #{{ savedId }}</p>
+            <p class="text-xs text-zinc-500 mt-0.5">Análise #{{ savedId }}</p>
           </div>
           <button
             class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
             @click="reset"
           >
-            New Analysis
+            Nova Análise
           </button>
         </div>
 

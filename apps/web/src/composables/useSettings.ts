@@ -36,7 +36,7 @@ export function useSettings() {
       settings.value = data
       return data
     } catch (e: unknown) {
-      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Failed to load settings.') : 'Unexpected error.'
+      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Falha ao carregar configurações.') : 'Erro inesperado.'
       return null
     } finally {
       loading.value = false
@@ -52,7 +52,7 @@ export function useSettings() {
       settings.value = data
       return true
     } catch (e: unknown) {
-      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Failed to save settings.') : 'Unexpected error.'
+      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Falha ao salvar configurações.') : 'Erro inesperado.'
       return false
     } finally {
       loading.value = false

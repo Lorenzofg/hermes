@@ -37,7 +37,7 @@ export function usePayslip() {
 
       if (!response.ok || !response.body) {
         const body = await response.json().catch(() => null)
-        error.value = body?.error ?? 'Failed to analyze the payslip.'
+        error.value = body?.error ?? 'Falha ao analisar o holerite.'
         return null
       }
 
@@ -72,7 +72,7 @@ export function usePayslip() {
 
       return result
     } catch {
-      error.value = 'Failed to analyze the payslip.'
+      error.value = 'Falha ao analisar o holerite.'
       return null
     } finally {
       loading.value = false
@@ -103,8 +103,8 @@ export function usePayslip() {
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)
-        ? (e.response?.data?.error ?? 'Failed to save.')
-        : 'Unexpected error.'
+        ? (e.response?.data?.error ?? 'Falha ao salvar.')
+        : 'Erro inesperado.'
       return null
     } finally {
       loading.value = false

@@ -29,7 +29,7 @@ export function useBatchTimesheet() {
 
       if (!response.ok || !response.body) {
         const body = await response.json().catch(() => null)
-        error.value = body?.error ?? `Request failed: ${response.status} ${response.statusText}`
+        error.value = body?.error ?? `Falha na requisição: ${response.status} ${response.statusText}`
         return null
       }
 
@@ -93,8 +93,8 @@ export function useBatchTimesheet() {
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)
-        ? (e.response?.data?.error ?? 'Failed to save.')
-        : 'Unexpected error.'
+        ? (e.response?.data?.error ?? 'Falha ao salvar.')
+        : 'Erro inesperado.'
       return null
     } finally {
       loading.value = false
@@ -115,8 +115,8 @@ export function useBatchTimesheet() {
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)
-        ? (e.response?.data?.error ?? 'Failed to save.')
-        : 'Unexpected error.'
+        ? (e.response?.data?.error ?? 'Falha ao salvar.')
+        : 'Erro inesperado.'
       return null
     } finally {
       loading.value = false

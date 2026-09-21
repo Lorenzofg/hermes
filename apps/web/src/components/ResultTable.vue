@@ -6,10 +6,10 @@
           <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">
             <button
               class="flex items-center gap-1 hover:text-zinc-100 transition-colors"
-              :title="copiedColumn === 'date' ? 'Copied!' : 'Copy column'"
+              :title="copiedColumn === 'date' ? 'Copiado!' : 'Copiar coluna'"
               @click="copyColumn('date', result.days.map((d) => d.date))"
             >
-              Date
+              Data
               <span class="normal-case">{{ copiedColumn === 'date' ? '✓' : '⧉' }}</span>
             </button>
           </th>
@@ -18,21 +18,21 @@
             :key="i"
             class="px-4 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400"
           >
-            <div>Shift {{ i }}</div>
+            <div>Turno {{ i }}</div>
             <div class="flex items-center justify-center gap-2 mt-0.5 normal-case font-normal">
               <button
                 class="text-[10px] text-zinc-500 hover:text-zinc-100 transition-colors"
-                :title="copiedColumn === `in${i}` ? 'Copied!' : 'Copy In column'"
+                :title="copiedColumn === `in${i}` ? 'Copiado!' : 'Copiar coluna Entrada'"
                 @click="copyColumn(`in${i}`, result.days.map((d) => d.shifts[i - 1]?.clockIn ?? ''))"
               >
-                {{ copiedColumn === `in${i}` ? '✓ in' : 'in ⧉' }}
+                {{ copiedColumn === `in${i}` ? '✓ entrada' : 'entrada ⧉' }}
               </button>
               <button
                 class="text-[10px] text-zinc-500 hover:text-zinc-100 transition-colors"
-                :title="copiedColumn === `out${i}` ? 'Copied!' : 'Copy Out column'"
+                :title="copiedColumn === `out${i}` ? 'Copiado!' : 'Copiar coluna Saída'"
                 @click="copyColumn(`out${i}`, result.days.map((d) => d.shifts[i - 1]?.clockOut ?? ''))"
               >
-                {{ copiedColumn === `out${i}` ? '✓ out' : 'out ⧉' }}
+                {{ copiedColumn === `out${i}` ? '✓ saída' : 'saída ⧉' }}
               </button>
             </div>
           </th>

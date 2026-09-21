@@ -69,7 +69,7 @@ export async function callClaude<T>(
   })
 
   if (response.stop_reason === 'max_tokens') {
-    throw new Error('Response truncated: document chunk is too large for a single AI call.')
+    throw new Error('Resposta truncada: o trecho do documento é grande demais para uma única chamada à IA.')
   }
 
   // Defensively find the text block rather than assuming content[0] — a
@@ -82,7 +82,7 @@ export async function callClaude<T>(
   try {
     parsed = JSON.parse(cleaned) as T
   } catch {
-    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 4000)}`)
+    throw new Error(`A IA retornou uma resposta que não é JSON: ${cleaned.slice(0, 4000)}`)
   }
 
   return {
@@ -132,7 +132,7 @@ export async function callGpt<T>(
   try {
     parsed = JSON.parse(cleaned) as T
   } catch {
-    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 4000)}`)
+    throw new Error(`A IA retornou uma resposta que não é JSON: ${cleaned.slice(0, 4000)}`)
   }
 
   return {
@@ -176,7 +176,7 @@ export async function callGemini<T>(
   try {
     parsed = JSON.parse(cleaned) as T
   } catch {
-    throw new Error(`AI returned non-JSON response: ${cleaned.slice(0, 4000)}`)
+    throw new Error(`A IA retornou uma resposta que não é JSON: ${cleaned.slice(0, 4000)}`)
   }
 
   return {

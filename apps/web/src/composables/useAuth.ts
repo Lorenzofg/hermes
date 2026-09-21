@@ -40,7 +40,7 @@ export function useAuth() {
       setSession(data.token, data.user)
       return true
     } catch (e: unknown) {
-      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Login failed.') : 'Unexpected error.'
+      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Falha no login.') : 'Erro inesperado.'
       return false
     } finally {
       loading.value = false
@@ -56,7 +56,7 @@ export function useAuth() {
       setSession(data.token, data.user)
       return true
     } catch (e: unknown) {
-      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Registration failed.') : 'Unexpected error.'
+      error.value = axios.isAxiosError(e) ? (e.response?.data?.error ?? 'Falha no cadastro.') : 'Erro inesperado.'
       return false
     } finally {
       loading.value = false

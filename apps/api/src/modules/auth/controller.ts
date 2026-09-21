@@ -11,12 +11,12 @@ export async function authController(app: FastifyInstance) {
       const { email, password } = request.body
 
       if (!email || !password || password.length < 8) {
-        return reply.status(400).send({ error: 'Email and a password of at least 8 characters are required.' })
+        return reply.status(400).send({ error: 'E-mail e senha com pelo menos 8 caracteres são obrigatórios.' })
       }
 
       const existing = await findUserByEmail(email)
       if (existing) {
-        return reply.status(409).send({ error: 'An account with this email already exists.' })
+        return reply.status(409).send({ error: 'Já existe uma conta com este e-mail.' })
       }
 
       const user = await createUser(email, password)
@@ -33,12 +33,12 @@ export async function authController(app: FastifyInstance) {
       const { email, password } = request.body
 
       if (!email || !password) {
-        return reply.status(400).send({ error: 'Email and password are required.' })
+        return reply.status(400).send({ error: 'E-mail e senha são obrigatórios.' })
       }
 
       const user = await findUserByEmail(email)
       if (!user || !(await verifyPassword(password, user.passwordHash))) {
-        return reply.status(401).send({ error: 'Invalid email or password.' })
+        return reply.status(401).send({ error: 'E-mail ou senha inválidos.' })
       }
 
       const token = app.jwt.sign({ id: user.id, email: user.email })

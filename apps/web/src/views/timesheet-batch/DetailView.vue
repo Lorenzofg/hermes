@@ -3,28 +3,28 @@
 
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-        Batch #{{ route.params.id }}
+        Lote #{{ route.params.id }}
       </h2>
       <RouterLink
         to="/history"
         class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
       >
-        Back
+        Voltar
       </RouterLink>
     </div>
 
-    <div v-if="loading" class="text-sm text-zinc-500">Loading...</div>
-    <div v-else-if="!analysis" class="text-sm text-red-400">Analysis not found.</div>
+    <div v-if="loading" class="text-sm text-zinc-500">Carregando...</div>
+    <div v-else-if="!analysis" class="text-sm text-red-400">Análise não encontrada.</div>
 
     <template v-else>
       <p class="text-xs text-zinc-500">
-        {{ analysis.fileName }} — {{ analysis.totalPeople }} people — {{ analysis.provider.toUpperCase() }}
+        {{ analysis.fileName }} — {{ analysis.totalPeople }} pessoas — {{ analysis.provider.toUpperCase() }}
       </p>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Page Errors ({{ pageErrors.length }} of {{ analysis.pageLog.length }} pages)</template>
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ analysis.pageLog.length }} páginas)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="font-semibold">Página {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
       </CollapsibleBox>
@@ -41,9 +41,9 @@
           >
             <div class="flex items-center gap-3">
               <span class="text-sm font-semibold text-zinc-200">{{ person.personName }}</span>
-              <span class="text-xs text-zinc-500">{{ person.totalDays }} days</span>
+              <span class="text-xs text-zinc-500">{{ person.totalDays }} dias</span>
               <span v-if="person.warnings.length" class="text-xs text-amber-400">
-                {{ person.warnings.length }} warning{{ person.warnings.length !== 1 ? 's' : '' }}
+                {{ person.warnings.length }} aviso{{ person.warnings.length !== 1 ? 's' : '' }}
               </span>
             </div>
             <div class="flex items-center gap-3">
@@ -52,13 +52,13 @@
                 :disabled="saving"
                 @click.stop="handleSavePerson(person)"
               >
-                {{ saving ? 'Saving...' : 'Save' }}
+                {{ saving ? 'Salvando...' : 'Salvar' }}
               </button>
               <button
                 class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
                 @click.stop="downloadPersonCsv(Number(route.params.id), person.id, person.personName)"
               >
-                Export CSV
+                Exportar CSV
               </button>
               <span class="text-xs text-zinc-500">{{ expanded.has(person.id) ? '▲' : '▼' }}</span>
             </div>
@@ -69,7 +69,7 @@
               v-if="person.warnings.length"
               class="border border-amber-800 bg-amber-900/20 rounded px-3 py-2"
             >
-              <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">Warnings</p>
+              <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">Avisos</p>
               <ul class="space-y-0.5">
                 <li v-for="(w, j) in person.warnings" :key="j" class="text-xs text-amber-400">— {{ w }}</li>
               </ul>

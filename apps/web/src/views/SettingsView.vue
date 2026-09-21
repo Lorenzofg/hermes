@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6 max-w-2xl">
 
-    <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Settings</h2>
+    <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Configurações</h2>
     <p class="text-xs text-zinc-500 -mt-4">
-      Each provider needs your own API key and the exact model ID you want to use. Leave a field blank to keep what's already saved.
+      Cada provedor precisa da sua própria chave de API e o ID exato do modelo que você quer usar. Deixe um campo em branco para manter o que já está salvo.
     </p>
 
-    <div v-if="loading && !settings" class="text-sm text-zinc-500">Loading...</div>
+    <div v-if="loading && !settings" class="text-sm text-zinc-500">Carregando...</div>
 
     <template v-else>
       <section
@@ -21,7 +21,7 @@
               class="text-xs px-2 py-0.5 rounded font-medium uppercase tracking-wide"
               :class="settings?.[p.key]?.configured ? 'bg-emerald-900/50 text-emerald-300' : 'bg-zinc-700 text-zinc-400'"
             >
-              {{ settings?.[p.key]?.configured ? 'Configured' : 'Not configured' }}
+              {{ settings?.[p.key]?.configured ? 'Configurado' : 'Não configurado' }}
             </span>
             <button
               v-if="settings?.[p.key]?.configured"
@@ -29,24 +29,24 @@
               class="text-xs text-zinc-500 hover:text-red-400 transition-colors underline underline-offset-2 disabled:opacity-50"
               @click="handleClear(p.key)"
             >
-              Clear
+              Limpar
             </button>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1.5">
-            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">API Key</label>
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Chave de API</label>
             <input
               v-model="form[p.key].apiKey"
               type="password"
-              :placeholder="settings?.[p.key]?.keyPreview ?? 'Enter API key'"
+              :placeholder="settings?.[p.key]?.keyPreview ?? 'Digite a chave de API'"
               class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
             />
           </div>
 
           <div class="space-y-1.5">
-            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Model ID</label>
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">ID do Modelo</label>
             <input
               v-model="form[p.key].model"
               type="text"
@@ -58,14 +58,14 @@
       </section>
 
       <div v-if="error" class="text-sm text-red-400">{{ error }}</div>
-      <div v-if="saved" class="text-sm text-emerald-400">Settings saved.</div>
+      <div v-if="saved" class="text-sm text-emerald-400">Configurações salvas.</div>
 
       <button
         :disabled="loading"
         class="px-6 py-2 text-sm font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
         @click="handleSave"
       >
-        {{ loading ? 'Saving...' : 'Save' }}
+        {{ loading ? 'Salvando...' : 'Salvar' }}
       </button>
     </template>
 
@@ -81,9 +81,9 @@ const { settings, loading, error, fetchSettings, saveSettings } = useSettings()
 const saved = ref(false)
 
 const providerList: { key: AIProvider; label: string; modelExample: string }[] = [
-  { key: 'claude', label: 'Claude (Anthropic)', modelExample: 'e.g. claude-opus-5' },
-  { key: 'gpt',    label: 'GPT (OpenAI)',        modelExample: 'e.g. gpt-4.1' },
-  { key: 'gemini', label: 'Gemini (Google)',      modelExample: 'e.g. gemini-2.5-pro' },
+  { key: 'claude', label: 'Claude (Anthropic)', modelExample: 'ex.: claude-opus-5' },
+  { key: 'gpt',    label: 'GPT (OpenAI)',        modelExample: 'ex.: gpt-4.1' },
+  { key: 'gemini', label: 'Gemini (Google)',      modelExample: 'ex.: gemini-2.5-pro' },
 ]
 
 const form = reactive<Record<AIProvider, { apiKey: string; model: string }>>({
@@ -116,7 +116,7 @@ async function handleSave() {
 }
 
 async function handleClear(key: AIProvider) {
-  if (!confirm(`Clear the saved API key and model for ${key}?`)) return
+  if (!confirm(`Limpar a chave de API e o modelo salvos para ${key}?`)) return
   saved.value = false
   if (await saveSettings({ [key]: { clear: true } })) saved.value = true
 }

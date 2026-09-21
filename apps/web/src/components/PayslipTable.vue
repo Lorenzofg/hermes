@@ -11,7 +11,7 @@
           >
             <button
               class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
-              :title="copiedColumn === col.key ? 'Copied!' : 'Copy column'"
+              :title="copiedColumn === col.key ? 'Copiado!' : 'Copiar coluna'"
               @click="copyColumn(col.key, payslips.map(col.value))"
             >
               {{ col.label }}
@@ -26,7 +26,7 @@
           >
             <button
               class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
-              :title="copiedColumn === `e:${desc}` ? 'Copied!' : 'Copy column'"
+              :title="copiedColumn === `e:${desc}` ? 'Copiado!' : 'Copiar coluna'"
               @click="copyColumn(`e:${desc}`, payslips.map((p) => String(findItem(p.earnings, desc)?.value ?? '')))"
             >
               {{ desc }}
@@ -41,7 +41,7 @@
           >
             <button
               class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
-              :title="copiedColumn === `d:${desc}` ? 'Copied!' : 'Copy column'"
+              :title="copiedColumn === `d:${desc}` ? 'Copiado!' : 'Copiar coluna'"
               @click="copyColumn(`d:${desc}`, payslips.map((p) => String(findItem(p.deductions, desc)?.value ?? '')))"
             >
               {{ desc }}
@@ -56,7 +56,7 @@
           >
             <button
               class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
-              :title="copiedColumn === col.key ? 'Copied!' : 'Copy column'"
+              :title="copiedColumn === col.key ? 'Copiado!' : 'Copiar coluna'"
               @click="copyColumn(col.key, payslips.map(col.value))"
             >
               {{ col.label }}
@@ -145,19 +145,19 @@ const earningKeys   = computed(() => uniqueDescriptions(props.payslips.flatMap((
 const deductionKeys = computed(() => uniqueDescriptions(props.payslips.flatMap((p) => p.deductions ?? [])))
 
 const fixedColumns: { key: string; label: string; align?: 'right'; value: (p: Payslip) => string }[] = [
-  { key: 'competence', label: 'Competence', value: (p) => p.competence ?? '' },
-  { key: 'employeeName', label: 'Employee', value: (p) => p.employeeName ?? '' },
+  { key: 'competence', label: 'Competência', value: (p) => p.competence ?? '' },
+  { key: 'employeeName', label: 'Funcionário', value: (p) => p.employeeName ?? '' },
   { key: 'cpf', label: 'CPF', value: (p) => p.cpf ?? '' },
-  { key: 'role', label: 'Role', value: (p) => p.role ?? '' },
-  { key: 'admissionDate', label: 'Admission', value: (p) => p.admissionDate ?? '' },
-  { key: 'baseSalary', label: 'Base Salary', align: 'right', value: (p) => String(p.baseSalary ?? '') },
+  { key: 'role', label: 'Cargo', value: (p) => p.role ?? '' },
+  { key: 'admissionDate', label: 'Admissão', value: (p) => p.admissionDate ?? '' },
+  { key: 'baseSalary', label: 'Salário Base', align: 'right', value: (p) => String(p.baseSalary ?? '') },
 ]
 
 const totalColumns: { key: string; label: string; align?: 'right'; value: (p: Payslip) => string }[] = [
-  { key: 'totalEarnings', label: 'Total Earnings', align: 'right', value: (p) => String(p.totalEarnings ?? '') },
-  { key: 'totalDeductions', label: 'Total Deductions', align: 'right', value: (p) => String(p.totalDeductions ?? '') },
-  { key: 'netSalary', label: 'Net Salary', align: 'right', value: (p) => String(p.netSalary ?? '') },
-  { key: 'fgtsBase', label: 'FGTS Base', align: 'right', value: (p) => String(p.fgtsBase ?? '') },
+  { key: 'totalEarnings', label: 'Total de Proventos', align: 'right', value: (p) => String(p.totalEarnings ?? '') },
+  { key: 'totalDeductions', label: 'Total de Descontos', align: 'right', value: (p) => String(p.totalDeductions ?? '') },
+  { key: 'netSalary', label: 'Salário Líquido', align: 'right', value: (p) => String(p.netSalary ?? '') },
+  { key: 'fgtsBase', label: 'Base FGTS', align: 'right', value: (p) => String(p.fgtsBase ?? '') },
   { key: 'fgtsAmount', label: 'FGTS', align: 'right', value: (p) => String(p.fgtsAmount ?? '') },
 ]
 

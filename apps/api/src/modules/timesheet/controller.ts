@@ -21,18 +21,18 @@ export async function timesheetController(app: FastifyInstance) {
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
-        return reply.status(400).send({ error: `Configure your ${provider} API key and model in Settings first.` })
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
       const file = await request.file()
-      if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
+      if (!file) return reply.status(400).send({ error: 'Nenhum arquivo enviado.' })
 
       if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}. Use JPG, PNG, WEBP or PDF.` })
+        return reply.status(400).send({ error: `Tipo de arquivo não suportado: ${file.mimetype}. Use JPG, PNG, WEBP ou PDF.` })
       }
 
       if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
+        return reply.status(400).send({ error: 'Arquivos PDF só são suportados com os provedores Claude ou Gemini.' })
       }
 
       const chunks: Buffer[] = []
@@ -65,18 +65,18 @@ export async function timesheetController(app: FastifyInstance) {
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
-        return reply.status(400).send({ error: `Configure your ${provider} API key and model in Settings first.` })
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
       const file = await request.file()
-      if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
+      if (!file) return reply.status(400).send({ error: 'Nenhum arquivo enviado.' })
 
       if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}. Use JPG, PNG, WEBP or PDF.` })
+        return reply.status(400).send({ error: `Tipo de arquivo não suportado: ${file.mimetype}. Use JPG, PNG, WEBP ou PDF.` })
       }
 
       if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
+        return reply.status(400).send({ error: 'Arquivos PDF só são suportados com os provedores Claude ou Gemini.' })
       }
 
       const fileChunks: Buffer[] = []
@@ -84,7 +84,7 @@ export async function timesheetController(app: FastifyInstance) {
       const buffer = Buffer.concat(fileChunks)
 
       if (file.mimetype === 'application/pdf' && buffer.length > MAX_PDF_BYTES) {
-        return reply.status(400).send({ error: `PDF too large. Maximum allowed size is ${MAX_PDF_MB} MB.` })
+        return reply.status(400).send({ error: `PDF muito grande. O tamanho máximo permitido é ${MAX_PDF_MB} MB.` })
       }
 
       const base64   = buffer.toString('base64')
@@ -109,7 +109,7 @@ export async function timesheetController(app: FastifyInstance) {
           usage:     result.usage,
         })
       } catch (err: any) {
-        sendEvent(reply, { type: 'error', message: err?.message ?? 'Processing failed.' })
+        sendEvent(reply, { type: 'error', message: err?.message ?? 'Falha no processamento.' })
       }
 
       endSSE(reply)
@@ -124,7 +124,7 @@ export async function timesheetController(app: FastifyInstance) {
       const { days, provider, fileName, warnings, pageLog = [], inputTokens = 0, outputTokens = 0 } = request.body
 
       if (!days || !Array.isArray(days) || days.length === 0) {
-        return reply.status(400).send({ error: 'No days provided.' })
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
       }
 
       const csvContent = generateCsv(days)
@@ -141,7 +141,7 @@ export async function timesheetController(app: FastifyInstance) {
     async (request, reply) => {
       const { days } = request.body
       if (!days || !Array.isArray(days) || days.length === 0) {
-        return reply.status(400).send({ error: 'No days provided.' })
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
       }
       return reply.send({ csvContent: generateCsv(days) })
     },
@@ -155,10 +155,10 @@ export async function timesheetController(app: FastifyInstance) {
   // GET /api/timesheet/analyses/:id
   app.get<{ Params: { id: string } }>('/analyses/:id', { preHandler: requireAuth }, async (request, reply) => {
     const id = Number(request.params.id)
-    if (isNaN(id)) return reply.status(400).send({ error: 'Invalid ID.' })
+    if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido.' })
 
     const analysis = await getAnalysis(id, request.user.id)
-    if (!analysis) return reply.status(404).send({ error: 'Analysis not found.' })
+    if (!analysis) return reply.status(404).send({ error: 'Análise não encontrada.' })
 
     return reply.send(analysis)
   })
@@ -169,15 +169,15 @@ export async function timesheetController(app: FastifyInstance) {
     { preHandler: requireAuth },
     async (request, reply) => {
       const id = Number(request.params.id)
-      if (isNaN(id)) return reply.status(400).send({ error: 'Invalid ID.' })
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido.' })
 
       const { days } = request.body
       if (!days || !Array.isArray(days)) {
-        return reply.status(400).send({ error: 'No days provided.' })
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
       }
 
       const result = await updateAnalysis(id, request.user.id, days)
-      if (!result) return reply.status(404).send({ error: 'Analysis not found.' })
+      if (!result) return reply.status(404).send({ error: 'Análise não encontrada.' })
 
       return reply.send(result)
     },
@@ -187,7 +187,7 @@ export async function timesheetController(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>('/analyses/:id/csv', { preHandler: requireAuth }, async (request, reply) => {
     const id = Number(request.params.id)
     const analysis = await getAnalysis(id, request.user.id)
-    if (!analysis) return reply.status(404).send({ error: 'Analysis not found.' })
+    if (!analysis) return reply.status(404).send({ error: 'Análise não encontrada.' })
 
     return reply
       .header('Content-Type', 'text/csv; charset=utf-8')

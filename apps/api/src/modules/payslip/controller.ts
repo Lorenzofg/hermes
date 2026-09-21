@@ -21,18 +21,18 @@ export async function payslipController(app: FastifyInstance) {
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
-        return reply.status(400).send({ error: `Configure your ${provider} API key and model in Settings first.` })
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
       const file = await request.file()
-      if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
+      if (!file) return reply.status(400).send({ error: 'Nenhum arquivo enviado.' })
 
       if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}.` })
+        return reply.status(400).send({ error: `Tipo de arquivo não suportado: ${file.mimetype}.` })
       }
 
       if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
+        return reply.status(400).send({ error: 'Arquivos PDF só são suportados com os provedores Claude ou Gemini.' })
       }
 
       const chunks: Buffer[] = []
@@ -60,18 +60,18 @@ export async function payslipController(app: FastifyInstance) {
 
       const credentials = await getCredentials(request.user.id, provider)
       if (!credentials) {
-        return reply.status(400).send({ error: `Configure your ${provider} API key and model in Settings first.` })
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
       const file = await request.file()
-      if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
+      if (!file) return reply.status(400).send({ error: 'Nenhum arquivo enviado.' })
 
       if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        return reply.status(400).send({ error: `Unsupported file type: ${file.mimetype}.` })
+        return reply.status(400).send({ error: `Tipo de arquivo não suportado: ${file.mimetype}.` })
       }
 
       if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
-        return reply.status(400).send({ error: 'PDF files are only supported with the Claude or Gemini provider.' })
+        return reply.status(400).send({ error: 'Arquivos PDF só são suportados com os provedores Claude ou Gemini.' })
       }
 
       const fileChunks: Buffer[] = []
@@ -79,7 +79,7 @@ export async function payslipController(app: FastifyInstance) {
       const buffer = Buffer.concat(fileChunks)
 
       if (file.mimetype === 'application/pdf' && buffer.length > MAX_PDF_BYTES) {
-        return reply.status(400).send({ error: `PDF too large. Maximum allowed size is ${MAX_PDF_MB} MB.` })
+        return reply.status(400).send({ error: `PDF muito grande. O tamanho máximo permitido é ${MAX_PDF_MB} MB.` })
       }
 
       const base64   = buffer.toString('base64')
@@ -102,7 +102,7 @@ export async function payslipController(app: FastifyInstance) {
           fileName,
         })
       } catch (err: any) {
-        sendEvent(reply, { type: 'error', message: err?.message ?? 'Processing failed.' })
+        sendEvent(reply, { type: 'error', message: err?.message ?? 'Falha no processamento.' })
       }
 
       endSSE(reply)
@@ -117,7 +117,7 @@ export async function payslipController(app: FastifyInstance) {
       const { payslips, warnings = [], pageLog = [], provider, fileName, inputTokens = 0, outputTokens = 0 } = request.body
 
       if (!payslips || payslips.length === 0) {
-        return reply.status(400).send({ error: 'No payslips provided.' })
+        return reply.status(400).send({ error: 'Nenhum holerite fornecido.' })
       }
 
       const record = await saveAnalysis({ userId: request.user.id, provider, fileName, payslips, warnings, pageLog, inputTokens, outputTokens })
@@ -134,10 +134,10 @@ export async function payslipController(app: FastifyInstance) {
   // GET /api/payslip/analyses/:id
   app.get<{ Params: { id: string } }>('/analyses/:id', { preHandler: requireAuth }, async (request, reply) => {
     const id = Number(request.params.id)
-    if (isNaN(id)) return reply.status(400).send({ error: 'Invalid ID.' })
+    if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido.' })
 
     const analysis = await getAnalysis(id, request.user.id)
-    if (!analysis) return reply.status(404).send({ error: 'Analysis not found.' })
+    if (!analysis) return reply.status(404).send({ error: 'Análise não encontrada.' })
 
     return reply.send(analysis)
   })

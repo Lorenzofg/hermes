@@ -52,7 +52,7 @@ export async function extractPdfPageRange(pdfBytes: Buffer, from: number, to: nu
   const totalPages = srcDoc.getPageCount()
   const start = Math.max(1, from)
   const end = Math.min(totalPages, to)
-  if (start > end) throw new Error(`Invalid page range ${start}-${end}: document has ${totalPages} page(s).`)
+  if (start > end) throw new Error(`Intervalo de páginas inválido ${start}-${end}: o documento tem ${totalPages} página(s).`)
 
   const indices = Array.from({ length: end - start + 1 }, (_, i) => start - 1 + i)
 

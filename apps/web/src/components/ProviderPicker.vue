@@ -1,6 +1,6 @@
 <template>
   <div v-if="visibleProviders.length > 1" class="space-y-1.5">
-    <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">AI Provider</label>
+    <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Provedor de IA</label>
     <div class="flex rounded-lg border border-zinc-700 overflow-hidden">
       <button
         v-for="p in visibleProviders"
@@ -16,12 +16,12 @@
     </div>
   </div>
   <div v-else-if="visibleProviders.length === 1" class="space-y-1.5">
-    <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">AI Provider</label>
+    <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Provedor de IA</label>
     <p class="text-sm text-zinc-300">{{ visibleProviders[0].label }}</p>
   </div>
   <p v-else-if="providers" class="text-xs text-amber-400">
-    No provider configured —
-    <RouterLink to="/settings" class="underline underline-offset-2 hover:text-amber-300">set one up in Settings</RouterLink>.
+    Nenhum provedor configurado —
+    <RouterLink to="/settings" class="underline underline-offset-2 hover:text-amber-300">configure um em Configurações</RouterLink>.
   </p>
   <div v-else />
 </template>

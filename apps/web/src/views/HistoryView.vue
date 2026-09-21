@@ -1,15 +1,15 @@
 <template>
   <div class="space-y-6">
 
-    <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">History</h2>
+    <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Histórico</h2>
 
-    <div v-if="loading" class="text-sm text-zinc-500">Loading...</div>
+    <div v-if="loading" class="text-sm text-zinc-500">Carregando...</div>
 
     <div
       v-else-if="list.length === 0"
       class="bg-zinc-800 border border-zinc-700 rounded-lg px-6 py-12 text-center"
     >
-      <p class="text-sm text-zinc-500">No analyses yet.</p>
+      <p class="text-sm text-zinc-500">Nenhuma análise ainda.</p>
     </div>
 
     <div v-else class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
@@ -17,12 +17,12 @@
         <thead>
           <tr class="border-b border-zinc-700">
             <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">#</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Type</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">File</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Provider</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Summary</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Tipo</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Arquivo</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Provedor</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Resumo</th>
             <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Tokens</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Date</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">Data</th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
@@ -38,7 +38,7 @@
             <td class="px-4 py-3 text-xs">
               <span class="px-2 py-0.5 rounded text-zinc-300 font-medium tracking-wide uppercase"
                 :class="typeBadge(item.type)">
-                {{ item.type }}
+                {{ typeLabel(item.type) }}
               </span>
             </td>
             <td class="px-4 py-3 text-zinc-200 text-xs">{{ item.fileName }}</td>
@@ -84,6 +84,12 @@ const TYPE_BADGE: Record<string, string> = {
   payslip:   'bg-emerald-900/50 text-emerald-300',
 }
 
+const TYPE_LABEL: Record<string, string> = {
+  timesheet: 'Ponto',
+  batch:     'Lote',
+  payslip:   'Holerite',
+}
+
 const list = ref<HistoryItem[]>([])
 const loading = ref(true)
 
@@ -107,5 +113,9 @@ function formatTokens(n: number): string {
 
 function typeBadge(type: string): string {
   return TYPE_BADGE[type] ?? 'bg-zinc-700 text-zinc-300'
+}
+
+function typeLabel(type: string): string {
+  return TYPE_LABEL[type] ?? type
 }
 </script>

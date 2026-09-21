@@ -2,21 +2,21 @@
   <div class="space-y-6">
 
     <p class="text-xs text-zinc-500">
-      Batch analyzes a multi-employee time card document (cartão de ponto) — one PDF where each page belongs to a different person, split out into separate timesheets.
+      Lote analisa um documento de cartão de ponto com vários funcionários — um PDF onde cada página pertence a uma pessoa diferente, separados em cartões de ponto individuais.
     </p>
 
     <!-- Step 1: Upload -->
     <section class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-          Step 1 — Upload
+          Passo 1 — Enviar arquivo
         </h2>
         <span
           v-if="step !== 'upload'"
           class="text-xs text-zinc-500 underline underline-offset-2 cursor-pointer hover:text-zinc-300 transition-colors"
           @click="reset"
         >
-          Start over
+          Recomeçar
         </span>
       </div>
 
@@ -33,7 +33,7 @@
             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
           @click="runAnalysis"
         >
-          {{ loading ? 'Analyzing...' : 'Analyze' }}
+          {{ loading ? 'Analisando...' : 'Analisar' }}
         </button>
       </div>
 
@@ -52,9 +52,9 @@
     <section v-if="step === 'review'" class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-          Step 2 — Review
+          Passo 2 — Revisão
           <span class="ml-2 text-zinc-600 normal-case tracking-normal font-normal">
-            {{ editablePeople.length }} people found
+            {{ editablePeople.length }} pessoas encontradas
           </span>
         </h2>
         <button
@@ -62,14 +62,14 @@
           class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
           @click="confirmAndSave"
         >
-          {{ loading ? 'Saving...' : 'Confirm & Save' }}
+          {{ loading ? 'Salvando...' : 'Confirmar e Salvar' }}
         </button>
       </div>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)</template>
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ pageLog.length }} páginas)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="font-semibold">Página {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
       </CollapsibleBox>
@@ -86,9 +86,9 @@
           >
             <div class="flex items-center gap-3">
               <span class="text-sm font-semibold text-zinc-200">{{ person.name }}</span>
-              <span class="text-xs text-zinc-500">{{ person.days.length }} days</span>
+              <span class="text-xs text-zinc-500">{{ person.days.length }} dias</span>
               <span v-if="person.warnings.length" class="text-xs text-amber-400">
-                {{ person.warnings.length }} warning{{ person.warnings.length !== 1 ? 's' : '' }}
+                {{ person.warnings.length }} aviso{{ person.warnings.length !== 1 ? 's' : '' }}
               </span>
             </div>
             <div class="flex items-center gap-3">
@@ -96,7 +96,7 @@
                 class="text-xs font-semibold text-zinc-300 hover:text-white transition-colors underline underline-offset-2"
                 @click.stop="handleExportPersonCsv(person)"
               >
-                Export CSV
+                Exportar CSV
               </button>
               <span class="text-xs text-zinc-500">{{ person.expanded ? '▲' : '▼' }}</span>
             </div>
@@ -107,7 +107,7 @@
               v-if="person.warnings.length"
               class="border border-amber-800 bg-amber-900/20 rounded px-3 py-2"
             >
-              <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">Warnings</p>
+              <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">Avisos</p>
               <ul class="space-y-0.5">
                 <li v-for="(w, j) in person.warnings" :key="j" class="text-xs text-amber-400">— {{ w }}</li>
               </ul>
@@ -120,26 +120,26 @@
 
     <!-- Step 3: Saved -->
     <section v-if="step === 'saved'" class="space-y-4">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Step 3 — Done</h2>
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Passo 3 — Concluído</h2>
 
       <div class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-semibold text-zinc-200">Batch analysis saved</p>
-            <p class="text-xs text-zinc-500 mt-0.5">ID #{{ savedId }} — {{ savedPeople.length }} people</p>
+            <p class="text-sm font-semibold text-zinc-200">Análise em lote salva</p>
+            <p class="text-xs text-zinc-500 mt-0.5">ID #{{ savedId }} — {{ savedPeople.length }} pessoas</p>
           </div>
           <div class="flex gap-2">
             <RouterLink
               :to="`/timesheet-batch/${savedId}`"
               class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
             >
-              View
+              Ver
             </RouterLink>
             <button
               class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
               @click="reset"
             >
-              New Analysis
+              Nova Análise
             </button>
           </div>
         </div>
@@ -152,13 +152,13 @@
           >
             <div>
               <p class="text-sm text-zinc-200">{{ person.name }}</p>
-              <p class="text-xs text-zinc-500">{{ person.totalDays }} days</p>
+              <p class="text-xs text-zinc-500">{{ person.totalDays }} dias</p>
             </div>
             <button
               class="px-3 py-1 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
               @click="downloadPersonCsv(savedId!, person.personId, person.name)"
             >
-              Export CSV
+              Exportar CSV
             </button>
           </div>
         </div>

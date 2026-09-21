@@ -2,21 +2,21 @@
   <div class="space-y-6">
 
     <p class="text-xs text-zinc-500">
-      Timesheet analyzes a single person's time card (cartão de ponto) — one PDF/image with one employee's clock-ins and clock-outs.
+      Cartão de Ponto analisa o cartão de ponto de uma única pessoa — um PDF/imagem com as entradas e saídas de um funcionário.
     </p>
 
     <!-- Step 1: Upload -->
     <section class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-          Step 1 — Upload
+          Passo 1 — Enviar arquivo
         </h2>
         <span
           v-if="step !== 'upload'"
           class="text-xs text-zinc-500 underline underline-offset-2 cursor-pointer hover:text-zinc-300 transition-colors"
           @click="reset"
         >
-          Start over
+          Recomeçar
         </span>
       </div>
 
@@ -33,7 +33,7 @@
             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
           @click="runAnalysis"
         >
-          {{ loading ? 'Analyzing...' : 'Analyze' }}
+          {{ loading ? 'Analisando...' : 'Analisar' }}
         </button>
       </div>
 
@@ -52,9 +52,9 @@
     <section v-if="step === 'review'" class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-          Step 2 — Review
+          Passo 2 — Revisão
           <span class="ml-2 text-zinc-600 normal-case tracking-normal font-normal">
-            {{ editableDays.length }} days
+            {{ editableDays.length }} dias
           </span>
         </h2>
         <div class="flex gap-2">
@@ -63,29 +63,29 @@
             class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
             @click="handleExportCsv"
           >
-            Export CSV
+            Exportar CSV
           </button>
           <button
             :disabled="loading"
             class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors disabled:opacity-50"
             @click="confirmAndSave"
           >
-            {{ loading ? 'Saving...' : 'Confirm & Save' }}
+            {{ loading ? 'Salvando...' : 'Confirmar e Salvar' }}
           </button>
         </div>
       </div>
 
       <CollapsibleBox v-if="warnings.length" variant="amber">
-        <template #title>AI Warnings ({{ warnings.length }})</template>
+        <template #title>Avisos da IA ({{ warnings.length }})</template>
         <ul class="space-y-1">
           <li v-for="(w, i) in warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
         </ul>
       </CollapsibleBox>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Page Errors ({{ pageErrors.length }} of {{ pageLog.length }} pages)</template>
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ pageLog.length }} páginas)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="font-semibold">Página {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
       </CollapsibleBox>
@@ -95,12 +95,12 @@
 
     <!-- Step 3: Saved -->
     <section v-if="step === 'saved'" class="space-y-4">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Step 3 — Done</h2>
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Passo 3 — Concluído</h2>
 
       <div class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-semibold text-zinc-200">Analysis saved successfully</p>
+            <p class="text-sm font-semibold text-zinc-200">Análise salva com sucesso</p>
             <p class="text-xs text-zinc-500 mt-0.5">ID #{{ savedId }}</p>
           </div>
           <div class="flex gap-2">
@@ -108,13 +108,13 @@
               class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
               @click="reset"
             >
-              New Analysis
+              Nova Análise
             </button>
             <button
               class="px-4 py-1.5 text-xs font-semibold bg-white text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
               @click="downloadCsv(savedCsv, savedId!)"
             >
-              Export CSV
+              Exportar CSV
             </button>
           </div>
         </div>

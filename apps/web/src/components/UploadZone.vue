@@ -18,8 +18,8 @@
     />
 
     <div v-if="!selectedFile" class="space-y-2">
-      <p class="text-sm text-zinc-300">Drop the timesheet here or click to select</p>
-      <p class="text-xs text-zinc-500">JPG, PNG, WEBP or PDF — max 10 MB</p>
+      <p class="text-sm text-zinc-300">Solte o arquivo aqui ou clique para selecionar</p>
+      <p class="text-xs text-zinc-500">JPG, PNG, WEBP ou PDF</p>
     </div>
 
     <div v-else class="space-y-1" @click.stop>
@@ -29,7 +29,7 @@
         class="text-xs text-zinc-400 hover:text-red-400 transition-colors mt-2 underline underline-offset-2"
         @click="remove"
       >
-        Remove
+        Remover
       </button>
     </div>
   </div>

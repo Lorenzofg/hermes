@@ -17,14 +17,14 @@ export async function pdfCutController(app: FastifyInstance) {
       const to = Number(request.query.to)
 
       if (!from || !to) {
-        return reply.status(400).send({ error: 'from and to page numbers are required.' })
+        return reply.status(400).send({ error: 'Os números de página inicial e final são obrigatórios.' })
       }
 
       const file = await request.file()
-      if (!file) return reply.status(400).send({ error: 'No file uploaded.' })
+      if (!file) return reply.status(400).send({ error: 'Nenhum arquivo enviado.' })
 
       if (file.mimetype !== 'application/pdf') {
-        return reply.status(400).send({ error: 'Only PDF files are supported.' })
+        return reply.status(400).send({ error: 'Somente arquivos PDF são suportados.' })
       }
 
       const chunks: Buffer[] = []
@@ -32,14 +32,14 @@ export async function pdfCutController(app: FastifyInstance) {
       const buffer = Buffer.concat(chunks)
 
       if (buffer.length > MAX_PDF_CUT_BYTES) {
-        return reply.status(400).send({ error: `PDF too large. Maximum allowed size is ${MAX_PDF_CUT_MB} MB.` })
+        return reply.status(400).send({ error: `PDF muito grande. O tamanho máximo permitido é ${MAX_PDF_CUT_MB} MB.` })
       }
 
       let cutBytes: Buffer
       try {
         cutBytes = await extractPdfPageRange(buffer, from, to)
       } catch (err: any) {
-        return reply.status(400).send({ error: err?.message ?? 'Failed to cut PDF.' })
+        return reply.status(400).send({ error: err?.message ?? 'Falha ao cortar o PDF.' })
       }
 
       return reply

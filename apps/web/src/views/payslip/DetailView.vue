@@ -3,31 +3,31 @@
 
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
-        Payslip Analysis #{{ route.params.id }}
+        Análise de Holerite #{{ route.params.id }}
       </h2>
       <RouterLink
         to="/history"
         class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors"
       >
-        Back
+        Voltar
       </RouterLink>
     </div>
 
-    <div v-if="loading" class="text-sm text-zinc-500">Loading...</div>
-    <div v-else-if="!analysis" class="text-sm text-red-400">Analysis not found.</div>
+    <div v-if="loading" class="text-sm text-zinc-500">Carregando...</div>
+    <div v-else-if="!analysis" class="text-sm text-red-400">Análise não encontrada.</div>
 
     <template v-else>
       <CollapsibleBox v-if="analysis.warnings.length" variant="amber">
-        <template #title>Warnings ({{ analysis.warnings.length }})</template>
+        <template #title>Avisos ({{ analysis.warnings.length }})</template>
         <ul class="space-y-1">
           <li v-for="(w, i) in analysis.warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
         </ul>
       </CollapsibleBox>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Page Errors ({{ pageErrors.length }} of {{ analysis.pageLog.length }} pages)</template>
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ analysis.pageLog.length }} páginas)</template>
         <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Page {{ e.page }}</p>
+          <p class="font-semibold">Página {{ e.page }}</p>
           <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
       </CollapsibleBox>

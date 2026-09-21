@@ -6,10 +6,10 @@
           <th class="px-2 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">
             <button
               class="flex items-center gap-1 hover:text-zinc-100 transition-colors"
-              :title="copiedColumn === 'date' ? 'Copied!' : 'Copy column'"
+              :title="copiedColumn === 'date' ? 'Copiado!' : 'Copiar coluna'"
               @click="copyColumn('date', editableDays.map((d) => d.date))"
             >
-              Date
+              Data
               <span class="normal-case">{{ copiedColumn === 'date' ? '✓' : '⧉' }}</span>
             </button>
           </th>
@@ -17,20 +17,20 @@
             <th class="px-1 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
               <button
                 class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
-                :title="copiedColumn === `in${i}` ? 'Copied!' : 'Copy column'"
+                :title="copiedColumn === `in${i}` ? 'Copiado!' : 'Copiar coluna'"
                 @click="copyColumn(`in${i}`, editableDays.map((d) => d.shifts[i - 1].clockIn))"
               >
-                In {{ i }}
+                Entrada {{ i }}
                 <span class="normal-case">{{ copiedColumn === `in${i}` ? '✓' : '⧉' }}</span>
               </button>
             </th>
             <th class="px-1 py-3 text-center text-xs font-semibold tracking-widest uppercase text-zinc-400">
               <button
                 class="inline-flex items-center gap-1 hover:text-zinc-100 transition-colors"
-                :title="copiedColumn === `out${i}` ? 'Copied!' : 'Copy column'"
+                :title="copiedColumn === `out${i}` ? 'Copiado!' : 'Copiar coluna'"
                 @click="copyColumn(`out${i}`, editableDays.map((d) => d.shifts[i - 1].clockOut))"
               >
-                Out {{ i }}
+                Saída {{ i }}
                 <span class="normal-case">{{ copiedColumn === `out${i}` ? '✓' : '⧉' }}</span>
               </button>
             </th>
@@ -80,7 +80,7 @@
         class="text-xs text-zinc-400 hover:text-zinc-200 transition-colors underline underline-offset-2"
         @click="addDay"
       >
-        + Add row
+        + Adicionar linha
       </button>
     </div>
   </div>

@@ -2,11 +2,11 @@
   <div class="space-y-6">
 
     <p class="text-xs text-zinc-500">
-      Cut PDF trims a large combined document down to just the pages you want (e.g. one person's cartão de ponto buried in a 200-page file) — download the smaller file, then upload it to Timesheet/Batch/Payslip as usual.
+      Cortar PDF reduz um documento combinado grande só às páginas que você quer (ex.: o cartão de ponto de uma pessoa perdido em um arquivo de 200 páginas) — baixe o arquivo menor e depois envie normalmente para Cartão de Ponto/Lote/Holerite.
     </p>
 
     <section class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-6">
-      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Cut PDF</h2>
+      <h2 class="text-xs font-semibold tracking-widest uppercase text-zinc-400">Cortar PDF</h2>
 
       <UploadZone v-model:file="file" />
 
@@ -21,7 +21,7 @@
             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
           @click="handleCut"
         >
-          {{ loading ? 'Cutting...' : 'Cut & Download' }}
+          {{ loading ? 'Cortando...' : 'Cortar e Baixar' }}
         </button>
       </div>
     </section>
@@ -75,9 +75,9 @@ async function handleCut() {
       // Error responses also come back as a blob because of responseType, so
       // the JSON error body needs to be read out of it manually.
       const text = await e.response.data.text()
-      error.value = JSON.parse(text)?.error ?? 'Failed to cut PDF.'
+      error.value = JSON.parse(text)?.error ?? 'Falha ao cortar o PDF.'
     } else {
-      error.value = 'Failed to cut PDF.'
+      error.value = 'Falha ao cortar o PDF.'
     }
   } finally {
     loading.value = false

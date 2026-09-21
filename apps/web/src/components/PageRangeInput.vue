@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-1.5">
-    <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Pages (optional)</label>
+    <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Páginas (opcional)</label>
     <div class="flex items-center gap-1.5">
       <input
         type="number"
@@ -14,7 +14,7 @@
       <input
         type="number"
         min="1"
-        placeholder="end"
+        placeholder="fim"
         :value="to"
         class="w-14 bg-zinc-700 border border-zinc-600 rounded px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
         @input="$emit('update:to', toNum($event))"

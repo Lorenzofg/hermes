@@ -1,7 +1,7 @@
 <template>
   <div v-if="loading && progress" class="space-y-1.5">
     <p class="text-xs text-zinc-400">
-      Processing page {{ progress.current }} of {{ progress.total }}...
+      Processando página {{ progress.current }} de {{ progress.total }}...
     </p>
     <div class="w-full bg-zinc-700 rounded-full h-1.5">
       <div
