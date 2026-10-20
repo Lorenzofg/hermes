@@ -49,7 +49,7 @@
               v-model="day.date"
               type="text"
               placeholder="dd/MM/yyyy"
-              class="w-full min-w-[78px] bg-zinc-700 border border-zinc-600 rounded px-1.5 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
+              class="w-full min-w-[96px] bg-zinc-700 border border-zinc-600 rounded px-1.5 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-600"
             />
           </td>
 
