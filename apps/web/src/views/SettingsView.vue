@@ -84,12 +84,14 @@ const providerList: { key: AIProvider; label: string; modelExample: string }[] =
   { key: 'claude', label: 'Claude (Anthropic)', modelExample: 'ex.: claude-opus-5' },
   { key: 'gpt',    label: 'GPT (OpenAI)',        modelExample: 'ex.: gpt-4.1' },
   { key: 'gemini', label: 'Gemini (Google)',      modelExample: 'ex.: gemini-2.5-pro' },
+  { key: 'openrouter', label: 'OpenRouter',       modelExample: 'ex.: anthropic/claude-opus-5' },
 ]
 
 const form = reactive<Record<AIProvider, { apiKey: string; model: string }>>({
   claude: { apiKey: '', model: '' },
   gpt:    { apiKey: '', model: '' },
   gemini: { apiKey: '', model: '' },
+  openrouter: { apiKey: '', model: '' },
 })
 
 onMounted(fetchSettings)

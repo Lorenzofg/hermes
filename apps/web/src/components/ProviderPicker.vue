@@ -42,6 +42,7 @@ const allProviders = [
   { value: 'claude' as const, label: 'Claude' },
   { value: 'gpt'    as const, label: 'GPT' },
   { value: 'gemini' as const, label: 'Gemini' },
+  { value: 'openrouter' as const, label: 'OpenRouter' },
 ]
 
 const visibleProviders = computed(() =>

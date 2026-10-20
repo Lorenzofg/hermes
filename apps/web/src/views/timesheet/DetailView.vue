@@ -155,7 +155,7 @@ const daysBeforeAdjust = ref<DayEntry[] | null>(null)
 // Same default as HomeView: use whichever provider the user configured.
 watch(providers, (val) => {
   if (!val || val[provider.value]) return
-  const configured = (['claude', 'gpt', 'gemini'] as const).find((k) => val[k])
+  const configured = (['claude', 'gpt', 'gemini', 'openrouter'] as const).find((k) => val[k])
   if (configured) provider.value = configured
 })
 

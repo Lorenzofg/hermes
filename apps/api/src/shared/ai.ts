@@ -23,6 +23,7 @@ function extractJson(text: string): string {
 export interface ProviderCredentials {
   apiKey: string
   model: string
+  baseURL?: string // set for OpenAI-compatible providers (OpenRouter)
 }
 
 export async function callClaude<T>(
@@ -109,8 +110,8 @@ export async function callAIText<T>(
   provider: AIProvider,
   credentials: ProviderCredentials,
 ): Promise<AIResult<T>> {
-  if (provider === 'gpt') {
-    const client = new OpenAI({ apiKey: credentials.apiKey })
+  if (provider === 'gpt' || provider === 'openrouter') {
+    const client = new OpenAI({ apiKey: credentials.apiKey, baseURL: credentials.baseURL })
     const response = await client.chat.completions.create({
       model: credentials.model,
       max_tokens: 4096,
@@ -197,7 +198,7 @@ export async function callGpt<T>(
   mimeType: string,
   credentials: ProviderCredentials,
 ): Promise<AIResult<T>> {
-  const client = new OpenAI({ apiKey: credentials.apiKey })
+  const client = new OpenAI({ apiKey: credentials.apiKey, baseURL: credentials.baseURL })
 
   const response = await client.chat.completions.create({
     model: credentials.model,

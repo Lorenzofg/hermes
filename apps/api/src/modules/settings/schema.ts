@@ -12,6 +12,9 @@ export const userSettings = pgTable('user_settings', {
 
   geminiApiKeyEnc: text('gemini_api_key_enc'),
   geminiModel:     text('gemini_model'),
+
+  openrouterApiKeyEnc: text('openrouter_api_key_enc'),
+  openrouterModel:     text('openrouter_model'),
 })
 
 export type UserSettings = typeof userSettings.$inferSelect

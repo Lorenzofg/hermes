@@ -1,4 +1,4 @@
-export type AIProvider = 'claude' | 'gpt' | 'gemini'
+export type AIProvider = 'claude' | 'gpt' | 'gemini' | 'openrouter'
 
 export interface Shift {
   clockIn: string  // "HH:mm" or empty

@@ -20,6 +20,7 @@ export interface SaveSettingsInput {
   claude?: ProviderInput
   gpt?: ProviderInput
   gemini?: ProviderInput
+  openrouter?: ProviderInput
 }
 
 export function useSettings() {

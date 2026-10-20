@@ -56,7 +56,7 @@ export async function analyzeByPage<T>(
 
       try {
         const result =
-          provider === 'gpt'
+          provider === 'gpt' || provider === 'openrouter'
             ? await callGpt<T>(prompt, pages[i], mimeType, credentials)
             : provider === 'gemini'
               ? await callGemini<T>(prompt, pages[i], isPdf ? 'application/pdf' : mimeType, credentials)

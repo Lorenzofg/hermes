@@ -14,6 +14,7 @@ export interface SaveSettingsInput {
   claude?: ProviderInput
   gpt?: ProviderInput
   gemini?: ProviderInput
+  openrouter?: ProviderInput
 }
 
 export interface ProviderStatus {
@@ -35,11 +36,13 @@ export async function getMaskedSettings(userId: number): Promise<Record<AIProvid
   const claudeKey = decryptOrNull(row?.anthropicApiKeyEnc ?? null)
   const gptKey    = decryptOrNull(row?.openaiApiKeyEnc ?? null)
   const geminiKey = decryptOrNull(row?.geminiApiKeyEnc ?? null)
+  const openrouterKey = decryptOrNull(row?.openrouterApiKeyEnc ?? null)
 
   return {
     claude: { configured: !!claudeKey, model: row?.anthropicModel ?? null, keyPreview: preview(claudeKey) },
     gpt:    { configured: !!gptKey,    model: row?.openaiModel ?? null,    keyPreview: preview(gptKey) },
     gemini: { configured: !!geminiKey, model: row?.geminiModel ?? null,    keyPreview: preview(geminiKey) },
+    openrouter: { configured: !!openrouterKey, model: row?.openrouterModel ?? null, keyPreview: preview(openrouterKey) },
   }
 }
 
@@ -70,6 +73,14 @@ export async function saveSettings(userId: number, input: SaveSettingsInput) {
     if (input.gemini?.model)  values.geminiModel = input.gemini.model
   }
 
+  if (input.openrouter?.clear) {
+    values.openrouterApiKeyEnc = null
+    values.openrouterModel = null
+  } else {
+    if (input.openrouter?.apiKey) values.openrouterApiKeyEnc = encrypt(input.openrouter.apiKey)
+    if (input.openrouter?.model)  values.openrouterModel = input.openrouter.model
+  }
+
   const updateSet = { ...values }
   delete updateSet.userId
 
@@ -84,7 +95,7 @@ export async function saveSettings(userId: number, input: SaveSettingsInput) {
 export async function getCredentials(
   userId: number,
   provider: AIProvider,
-): Promise<{ apiKey: string; model: string } | null> {
+): Promise<{ apiKey: string; model: string; baseURL?: string } | null> {
   const [row] = await db.select().from(userSettings).where(eq(userSettings.userId, userId))
   if (!row) return null
 
@@ -92,10 +103,13 @@ export async function getCredentials(
     claude: { keyEnc: row.anthropicApiKeyEnc, model: row.anthropicModel },
     gpt:    { keyEnc: row.openaiApiKeyEnc,    model: row.openaiModel },
     gemini: { keyEnc: row.geminiApiKeyEnc,    model: row.geminiModel },
+    openrouter: { keyEnc: row.openrouterApiKeyEnc, model: row.openrouterModel },
   } as const
 
   const entry = map[provider]
   if (!entry.keyEnc || !entry.model) return null
 
-  return { apiKey: decrypt(entry.keyEnc), model: entry.model }
+  // OpenRouter speaks the OpenAI API, so it reuses the GPT client with its own base URL.
+  const baseURL = provider === 'openrouter' ? 'https://openrouter.ai/api/v1' : undefined
+  return { apiKey: decrypt(entry.keyEnc), model: entry.model, baseURL }
 }

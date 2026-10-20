@@ -143,7 +143,7 @@ const provider = ref<AIProvider>('claude')
 // who only set up GPT or Gemini.
 watch(providers, (val) => {
   if (!val || val[provider.value]) return
-  const configured = (['claude', 'gpt', 'gemini'] as const).find((k) => val[k])
+  const configured = (['claude', 'gpt', 'gemini', 'openrouter'] as const).find((k) => val[k])
   if (configured) provider.value = configured
 })
 
