@@ -2,13 +2,10 @@ import type { FastifyInstance } from 'fastify'
 import { processBatchTimesheet } from './processor.js'
 import { saveBatchAnalysis, listBatchAnalyses, getBatchAnalysis, getBatchPersonCsv, updateBatchPerson } from './service.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
-import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { requireAuth } from '../../shared/auth.js'
+import { readUpload } from '../../shared/upload.js'
 import { getCredentials } from '../settings/service.js'
 import type { BatchPersonResult, DayEntry, PageLogEntry, AIProvider } from '@hermes/types'
-
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
-const MAX_PDF_MB = MAX_PDF_BYTES / (1024 * 1024)
 
 export async function timesheetBatchController(app: FastifyInstance) {
 
@@ -24,28 +21,12 @@ export async function timesheetBatchController(app: FastifyInstance) {
         return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
-      const file = await request.file()
-      if (!file) return reply.status(400).send({ error: 'Nenhum arquivo enviado.' })
+      const upload = await readUpload(request, provider)
+      if ('error' in upload) return reply.status(400).send({ error: upload.error })
 
-      if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        return reply.status(400).send({ error: `Tipo de arquivo não suportado: ${file.mimetype}. Use JPG, PNG, WEBP ou PDF.` })
-      }
-
-      if (file.mimetype === 'application/pdf' && provider !== 'claude' && provider !== 'gemini') {
-        return reply.status(400).send({ error: 'Arquivos PDF só são suportados com os provedores Claude ou Gemini.' })
-      }
-
-      const fileChunks: Buffer[] = []
-      for await (const chunk of file.file) fileChunks.push(chunk)
-      const buffer = Buffer.concat(fileChunks)
-
-      if (file.mimetype === 'application/pdf' && buffer.length > MAX_PDF_BYTES) {
-        return reply.status(400).send({ error: `PDF muito grande. O tamanho máximo permitido é ${MAX_PDF_MB} MB.` })
-      }
-
-      const base64   = buffer.toString('base64')
-      const fileName = file.filename
-      const mimeType = file.mimetype
+      const base64   = upload.buffer.toString('base64')
+      const fileName = upload.fileName
+      const mimeType = upload.mimeType
 
       startSSE(reply)
 

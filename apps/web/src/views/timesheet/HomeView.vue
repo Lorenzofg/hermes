@@ -38,15 +38,15 @@
       </div>
 
       <template v-if="mode === 'real'">
-        <UploadZone v-model:file="file" />
+        <UploadZone v-model:files="files" multiple />
 
         <div v-if="step === 'upload'" class="flex items-end justify-between flex-wrap gap-4">
           <ProviderPicker v-model="provider" :providers="providers" />
 
           <button
-            :disabled="!file || loading"
+            :disabled="!files.length || loading"
             class="px-6 py-2 text-sm font-semibold rounded-lg whitespace-nowrap transition-colors"
-            :class="file && !loading
+            :class="files.length && !loading
               ? 'bg-white text-zinc-900 hover:bg-zinc-100'
               : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
             @click="runAnalysis"
@@ -298,7 +298,7 @@ type Mode = 'real' | 'presumed'
 
 const step = ref<Step>('upload')
 const mode = ref<Mode>('real')
-const file = ref<File | null>(null)
+const files = ref<File[]>([])
 const provider = ref<AIProvider>('claude')
 
 const presumedText = ref('')
@@ -346,9 +346,9 @@ function toEditable(days: DayEntry[]): DayEntry[] {
 }
 
 async function runAnalysis() {
-  if (!file.value) return
+  if (!files.value.length) return
 
-  const result = await analyzePreview(file.value, provider.value)
+  const result = await analyzePreview(files.value, provider.value)
   if (!result) return
 
   fileName.value = result.fileName
@@ -468,7 +468,7 @@ async function confirmAndSave() {
 function reset() {
   step.value = 'upload'
   mode.value = 'real'
-  file.value = null
+  files.value = []
   presumedText.value = ''
   presumedDateFrom.value = ''
   presumedDateTo.value = ''

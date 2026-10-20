@@ -2,6 +2,7 @@ import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { BATCH_TIMESHEET_PROMPT } from './prompt.js'
 import type { TokenUsage, ProviderCredentials } from '../../shared/ai.js'
 import { monthWarnings, type Leave } from '../../shared/months.js'
+import { keepPunched } from '../timesheet/processor.js'
 import type { BatchPersonResult, AIProvider } from '@hermes/types'
 
 interface RawResult {
@@ -48,7 +49,7 @@ export async function processBatchTimesheet(
 
       if (existing) {
         const dayMap = new Map(existing.days.map((d) => [d.date, d]))
-        for (const day of person.days) dayMap.set(day.date, day)
+        for (const day of person.days) keepPunched(dayMap, day)
         existing.days = Array.from(dayMap.values())
         existing.warnings.push(...person.warnings)
       } else {

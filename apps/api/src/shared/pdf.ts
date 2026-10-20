@@ -62,3 +62,18 @@ export async function extractPdfPageRange(pdfBytes: Buffer, from: number, to: nu
 
   return Buffer.from(await doc.save())
 }
+
+/**
+ * Concatenates several PDFs, in order, into one — so a timesheet split
+ * across files is analyzed as a single document (missing months are then
+ * detected across all of them).
+ */
+export async function mergePdfs(files: Buffer[]): Promise<Buffer> {
+  const doc = await PDFDocument.create()
+  for (const bytes of files) {
+    const src = await PDFDocument.load(bytes, { throwOnInvalidObject: false })
+    const pages = await doc.copyPages(src, src.getPageIndices())
+    for (const page of pages) doc.addPage(page)
+  }
+  return Buffer.from(await doc.save())
+}

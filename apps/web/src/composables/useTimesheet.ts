@@ -10,7 +10,7 @@ export function useTimesheet() {
   const progress = ref<{ current: number; total: number } | null>(null)
 
   async function analyzePreview(
-    file: File,
+    files: File[],
     provider: AIProvider,
   ): Promise<(AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null> {
     loading.value = true
@@ -19,7 +19,7 @@ export function useTimesheet() {
 
     try {
       const form = new FormData()
-      form.append('file', file)
+      for (const f of files) form.append('file', f)
 
       const response = await fetch(`/api/timesheet/preview-stream?provider=${provider}`, {
         method: 'POST',
