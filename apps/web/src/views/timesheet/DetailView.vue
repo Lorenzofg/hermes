@@ -21,6 +21,14 @@
           Ajustar pela determinação
         </button>
         <button
+          v-if="result && (missing.length || daysBeforePresume)"
+          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+          :class="showPresume ? 'bg-zinc-700' : ''"
+          @click="showPresume = !showPresume"
+        >
+          Presumir meses faltantes
+        </button>
+        <button
           v-if="result"
           class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
           :disabled="saving"
@@ -97,6 +105,17 @@
         </div>
       </section>
 
+      <PresumeMissingPanel
+        v-if="showPresume"
+        v-model:provider="provider"
+        :months="missing"
+        :providers="providers"
+        :loading="saving"
+        :can-undo="!!daysBeforePresume"
+        @apply="runPresume"
+        @undo="undoPresume"
+      />
+
       <div
         v-if="error"
         class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 text-sm text-red-300"
@@ -106,9 +125,7 @@
 
       <CollapsibleBox v-if="result.warnings.length" variant="amber">
         <template #title>Avisos ({{ result.warnings.length }})</template>
-        <ul class="space-y-1">
-          <li v-for="(w, i) in result.warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
-        </ul>
+        <WarningGroups :warnings="result.warnings" />
       </CollapsibleBox>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
@@ -131,6 +148,9 @@ import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
+import WarningGroups from '../../components/WarningGroups.vue'
+import PresumeMissingPanel from '../../components/PresumeMissingPanel.vue'
+import { missingMonths, withoutMissing } from '../../lib/warnings'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
@@ -138,7 +158,7 @@ import { sortByDate } from '../../lib/competence'
 import type { AnalyzeTimesheetResponse, DayEntry, AIProvider } from '@hermes/types'
 
 const route = useRoute()
-const { downloadCsv, updateAnalysis, adjustDays, error, loading: saving } = useTimesheet()
+const { downloadCsv, updateAnalysis, adjustDays, presumeMissing, error, loading: saving } = useTimesheet()
 const { providers } = useProviders()
 const result = ref<AnalyzeTimesheetResponse | null>(null)
 const editableDays = ref<DayEntry[]>([])
@@ -151,6 +171,9 @@ const adjustText = ref('')
 const adjustDateFrom = ref('')
 const adjustDateTo = ref('')
 const daysBeforeAdjust = ref<DayEntry[] | null>(null)
+const showPresume = ref(false)
+const daysBeforePresume = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
+const missing = computed(() => missingMonths(result.value?.warnings ?? []))
 
 // Same default as HomeView: use whichever provider the user configured.
 watch(providers, (val) => {
@@ -202,6 +225,26 @@ async function runAdjustment() {
   result.value = { ...result.value, warnings: [...result.value.warnings, ...adjusted.warnings] }
 }
 
+// Fills the months the defendant never attached; persisted only on "Salvar alterações".
+async function runPresume(months: string[], text: string) {
+  if (!result.value) return
+  const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...result.value.warnings] }
+  const presumed = await presumeMissing(editableDays.value, months, text, provider.value)
+  if (!presumed) return
+
+  daysBeforePresume.value = snapshot
+  showPresume.value = false
+  editableDays.value = sortByDate(presumed.days)
+  result.value = { ...result.value, warnings: [...withoutMissing(result.value.warnings, months), ...presumed.warnings] }
+}
+
+function undoPresume() {
+  if (!daysBeforePresume.value || !result.value) return
+  editableDays.value = daysBeforePresume.value.days
+  result.value = { ...result.value, warnings: daysBeforePresume.value.warnings }
+  daysBeforePresume.value = null
+}
+
 function undoAdjust() {
   if (!daysBeforeAdjust.value) return
   editableDays.value = daysBeforeAdjust.value
@@ -209,7 +252,8 @@ function undoAdjust() {
 }
 
 async function handleSave() {
-  const updated = await updateAnalysis(Number(route.params.id), editableDays.value)
+  if (!result.value) return
+  const updated = await updateAnalysis(Number(route.params.id), editableDays.value, result.value.warnings)
   if (!updated || !result.value) return
   result.value = { ...result.value, days: editableDays.value, csvContent: updated.csvContent, totalDays: editableDays.value.length }
 }

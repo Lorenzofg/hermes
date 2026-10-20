@@ -108,9 +108,7 @@
               class="border border-amber-800 bg-amber-900/20 rounded px-3 py-2"
             >
               <p class="text-xs font-semibold tracking-wide uppercase text-amber-500 mb-1">Avisos</p>
-              <ul class="space-y-0.5">
-                <li v-for="(w, j) in person.warnings" :key="j" class="text-xs text-amber-400">— {{ w }}</li>
-              </ul>
+              <WarningGroups :warnings="person.warnings" small />
             </div>
             <EditableTable v-model:days="person.days" />
           </div>
@@ -173,6 +171,7 @@ import { ref, computed, watch } from 'vue'
 import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
+import WarningGroups from '../../components/WarningGroups.vue'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
 import { useBatchTimesheet } from '../../composables/useBatchTimesheet'

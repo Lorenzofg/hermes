@@ -5,6 +5,8 @@ import { generatePresumedDays } from './presumed.js'
 import { applyAdjustment, type Adjustment } from './adjust.js'
 import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
 import { ADJUSTMENT_PROMPT } from './adjust-prompt.js'
+import { fillMissingMonths, type PresumedSchedule } from './presume-missing.js'
+import { PRESUME_MISSING_PROMPT } from './presume-missing-prompt.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { callAIText } from '../../shared/ai.js'
@@ -235,6 +237,54 @@ export async function timesheetController(app: FastifyInstance) {
     },
   )
 
+  // POST /api/timesheet/presume-missing — fills months the defendant never
+  // attached ("Mês faltante") with the presumed schedule from the judge's
+  // determination. The AI only reads the weekly pattern; the days are
+  // generated in code and existing ones are never overwritten.
+  app.post<{ Body: { days: DayEntry[]; months: string[]; text: string; provider?: AIProvider } }>(
+    '/presume-missing',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { days, months, text } = request.body
+      const provider = request.body.provider ?? 'claude'
+
+      if (!Array.isArray(days)) {
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
+      }
+      if (!Array.isArray(months) || months.length === 0) {
+        return reply.status(400).send({ error: 'Selecione ao menos um mês faltante.' })
+      }
+      if (!text?.trim()) {
+        return reply.status(400).send({ error: 'O texto da determinação é obrigatório.' })
+      }
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
+      }
+
+      let result
+      try {
+        result = await callAIText<{ schedules?: PresumedSchedule[]; warnings?: string[] }>(PRESUME_MISSING_PROMPT, text, provider, credentials)
+      } catch (err: any) {
+        return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
+      }
+
+      const schedules = (result.data.schedules ?? []).filter((s) => s.weekdays?.length && s.shifts?.length)
+      const warnings = result.data.warnings ?? []
+      if (schedules.length === 0) {
+        return reply.status(400).send({ error: warnings[0] ?? 'Não foi possível identificar um padrão de jornada no texto informado.' })
+      }
+
+      const filled = fillMissingMonths(days, months, schedules)
+      return reply.status(200).send({
+        days: filled,
+        warnings: [...warnings, ...months.map((m) => `Mês presumido: ${m} — jornada presumida pela determinação`)],
+        usage: result.usage,
+      })
+    },
+  )
+
   // POST /api/timesheet/save
   app.post<{ Body: { days: DayEntry[]; provider: AIProvider; fileName: string; warnings: string[]; pageLog?: PageLogEntry[]; inputTokens?: number; outputTokens?: number } }>(
     '/save',
@@ -283,19 +333,19 @@ export async function timesheetController(app: FastifyInstance) {
   })
 
   // PUT /api/timesheet/analyses/:id — overwrite a saved analysis's days
-  app.put<{ Params: { id: string }; Body: { days: DayEntry[] } }>(
+  app.put<{ Params: { id: string }; Body: { days: DayEntry[]; warnings?: string[] } }>(
     '/analyses/:id',
     { preHandler: requireAuth },
     async (request, reply) => {
       const id = Number(request.params.id)
       if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido.' })
 
-      const { days } = request.body
+      const { days, warnings } = request.body
       if (!days || !Array.isArray(days)) {
         return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
       }
 
-      const result = await updateAnalysis(id, request.user.id, days)
+      const result = await updateAnalysis(id, request.user.id, days, Array.isArray(warnings) ? warnings : undefined)
       if (!result) return reply.status(404).send({ error: 'Análise não encontrada.' })
 
       return reply.send(result)

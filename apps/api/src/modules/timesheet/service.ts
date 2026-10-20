@@ -84,7 +84,8 @@ export async function saveAnalysis(params: SaveParams) {
 
 // Overwrites a saved analysis's days — lets the user fix a wrong row or
 // clear a value in History after the fact, not just during the initial review.
-export async function updateAnalysis(id: number, userId: number, days: DayEntry[]) {
+// Warnings are replaced only when given (adjusting/presuming changes them).
+export async function updateAnalysis(id: number, userId: number, days: DayEntry[], warnings?: string[]) {
   const [existing] = await db
     .select({ id: timesheetAnalyses.id })
     .from(timesheetAnalyses)
@@ -98,7 +99,10 @@ export async function updateAnalysis(id: number, userId: number, days: DayEntry[
     await db.insert(timesheetRecords).values(days.map((day) => dayToRecord(id, day)))
   }
 
-  await db.update(timesheetAnalyses).set({ totalDays: days.length, csvContent }).where(eq(timesheetAnalyses.id, id))
+  await db
+    .update(timesheetAnalyses)
+    .set({ totalDays: days.length, csvContent, ...(warnings ? { warnings } : {}) })
+    .where(eq(timesheetAnalyses.id, id))
 
   return { csvContent }
 }

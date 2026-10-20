@@ -135,6 +135,14 @@
             Ajustar pela determinação
           </button>
           <button
+            v-if="missing.length || daysBeforePresume"
+            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+            :class="showPresume ? 'bg-zinc-700' : ''"
+            @click="showPresume = !showPresume"
+          >
+            Presumir meses faltantes
+          </button>
+          <button
             :disabled="loading"
             class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
             @click="handleExportCsv"
@@ -203,11 +211,20 @@
         </div>
       </section>
 
+      <PresumeMissingPanel
+        v-if="showPresume"
+        v-model:provider="provider"
+        :months="missing"
+        :providers="providers"
+        :loading="loading"
+        :can-undo="!!daysBeforePresume"
+        @apply="runPresume"
+        @undo="undoPresume"
+      />
+
       <CollapsibleBox v-if="warnings.length" variant="amber">
         <template #title>Avisos da IA ({{ warnings.length }})</template>
-        <ul class="space-y-1">
-          <li v-for="(w, i) in warnings" :key="i" class="text-sm text-amber-300">— {{ w }}</li>
-        </ul>
+        <WarningGroups :warnings="warnings" />
       </CollapsibleBox>
 
       <CollapsibleBox v-if="pageErrors.length" variant="red">
@@ -260,6 +277,9 @@ import UploadZone from '../../components/UploadZone.vue'
 import EditableTable from '../../components/EditableTable.vue'
 import ResultTable from '../../components/ResultTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
+import WarningGroups from '../../components/WarningGroups.vue'
+import PresumeMissingPanel from '../../components/PresumeMissingPanel.vue'
+import { missingMonths, withoutMissing } from '../../lib/warnings'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
@@ -269,7 +289,7 @@ import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } fro
 
 type Step = 'upload' | 'review' | 'saved'
 
-const { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
+const { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, presumeMissing, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
 const { providers } = useProviders()
 
 const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
@@ -302,6 +322,9 @@ const adjustDateFrom = ref('')
 const adjustDateTo = ref('')
 const daysBeforeAdjust = ref<DayEntry[] | null>(null)
 const warnings = ref<string[]>([])
+const showPresume = ref(false)
+const daysBeforePresume = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
+const missing = computed(() => missingMonths(warnings.value))
 const pageLog = ref<PageLogEntry[]>([])
 const fileName = ref('')
 const usage = ref<{ inputTokens: number; outputTokens: number } | null>(null)
@@ -389,6 +412,31 @@ async function runAdjustment() {
   }
 }
 
+// Fills the months the defendant never attached; snapshot allows one-click undo.
+async function runPresume(months: string[], text: string) {
+  const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...warnings.value] }
+  const result = await presumeMissing(editableDays.value, months, text, provider.value)
+  if (!result) return
+
+  daysBeforePresume.value = snapshot
+  showPresume.value = false
+  editableDays.value = toEditable(result.days)
+  warnings.value = [...withoutMissing(warnings.value, months), ...result.warnings]
+  if (usage.value) {
+    usage.value = {
+      inputTokens:  usage.value.inputTokens + result.usage.inputTokens,
+      outputTokens: usage.value.outputTokens + result.usage.outputTokens,
+    }
+  }
+}
+
+function undoPresume() {
+  if (!daysBeforePresume.value) return
+  editableDays.value = daysBeforePresume.value.days
+  warnings.value = daysBeforePresume.value.warnings
+  daysBeforePresume.value = null
+}
+
 function undoAdjust() {
   if (!daysBeforeAdjust.value) return
   editableDays.value = daysBeforeAdjust.value
@@ -430,6 +478,8 @@ function reset() {
   adjustDateFrom.value = ''
   adjustDateTo.value = ''
   daysBeforeAdjust.value = null
+  showPresume.value = false
+  daysBeforePresume.value = null
   warnings.value = []
   pageLog.value = []
   fileName.value = ''

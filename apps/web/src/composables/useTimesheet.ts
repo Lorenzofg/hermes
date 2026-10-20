@@ -96,6 +96,29 @@ export function useTimesheet() {
     }
   }
 
+  // Fills months the defendant never attached with the judge's presumed schedule.
+  async function presumeMissing(
+    days: DayEntry[],
+    months: string[],
+    text: string,
+    provider: AIProvider,
+  ): Promise<{ days: DayEntry[]; warnings: string[]; usage: { inputTokens: number; outputTokens: number } } | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data } = await axios.post('/api/timesheet/presume-missing', { days, months, text, provider })
+      return data
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e)
+        ? (e.response?.data?.error ?? 'Falha ao presumir os meses faltantes.')
+        : 'Erro inesperado.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Applies a judge's determination over days already on the review table —
   // e.g. the card shows a 12h–14h break but the judge ordered 12h–13h.
   async function adjustDays(
@@ -161,12 +184,12 @@ export function useTimesheet() {
 
   // Overwrites a saved analysis's days — used from History to fix a wrong
   // row or clear a value after the fact.
-  async function updateAnalysis(analysisId: number, days: DayEntry[]): Promise<{ csvContent: string } | null> {
+  async function updateAnalysis(analysisId: number, days: DayEntry[], warnings?: string[]): Promise<{ csvContent: string } | null> {
     loading.value = true
     error.value = null
 
     try {
-      const { data } = await axios.put<{ csvContent: string }>(`/api/timesheet/analyses/${analysisId}`, { days })
+      const { data } = await axios.put<{ csvContent: string }>(`/api/timesheet/analyses/${analysisId}`, { days, warnings })
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)
@@ -200,5 +223,5 @@ export function useTimesheet() {
     }
   }
 
-  return { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
+  return { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, presumeMissing, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
 }

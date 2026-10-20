@@ -1,10 +1,11 @@
 import { analyzeByPage, type PageLogEntry } from '../../shared/document.js'
 import { BATCH_TIMESHEET_PROMPT } from './prompt.js'
 import type { TokenUsage, ProviderCredentials } from '../../shared/ai.js'
+import { monthWarnings, type Leave } from '../../shared/months.js'
 import type { BatchPersonResult, AIProvider } from '@hermes/types'
 
 interface RawResult {
-  people: BatchPersonResult[]
+  people: (BatchPersonResult & { leaves?: Leave[] })[]
 }
 
 export interface BatchProcessResult {
@@ -36,12 +37,14 @@ export async function processBatchTimesheet(
   // in here using the real page number instead, so two different unnamed
   // employees never collide into the same map key.
   const peopleMap = new Map<string, BatchPersonResult>()
+  const leavesByPerson = new Map<string, Leave[]>()
 
   for (const { page: pageNumber, data } of pages) {
     for (const person of data.people ?? []) {
       const name = person.name.trim() || `Funcionário (página ${pageNumber})`
       const key = name.toLowerCase()
       const existing = peopleMap.get(key)
+      leavesByPerson.set(key, [...(leavesByPerson.get(key) ?? []), ...(person.leaves ?? [])])
 
       if (existing) {
         const dayMap = new Map(existing.days.map((d) => [d.date, d]))
@@ -52,6 +55,10 @@ export async function processBatchTimesheet(
         peopleMap.set(key, { name, days: person.days, warnings: person.warnings })
       }
     }
+  }
+
+  for (const [key, person] of peopleMap) {
+    person.warnings.push(...monthWarnings(person.days, leavesByPerson.get(key) ?? []))
   }
 
   return { people: Array.from(peopleMap.values()), usage, pageLog }
