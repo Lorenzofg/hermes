@@ -14,6 +14,14 @@
         </RouterLink>
         <button
           v-if="result"
+          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+          :class="showAdjust ? 'bg-zinc-700' : ''"
+          @click="showAdjust = !showAdjust"
+        >
+          Ajustar pela determinação
+        </button>
+        <button
+          v-if="result"
           class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
           :disabled="saving"
           @click="handleSave"
@@ -34,6 +42,68 @@
     <div v-else-if="!result" class="text-sm text-red-400">Análise não encontrada.</div>
 
     <template v-else>
+      <section v-if="showAdjust" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
+        <p class="text-xs text-zinc-500">
+          Cole o trecho da decisão que altera o que foi registrado — por exemplo, um intervalo de 1h no lugar das 2h marcadas. Os horários são extraídos do texto e aplicados aos dias da tabela; o período é opcional (vazio = todos os dias).
+        </p>
+
+        <textarea
+          v-model="adjustText"
+          rows="4"
+          placeholder="Cole aqui o trecho da decisão..."
+          class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
+        />
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">De (opcional)</label>
+            <input
+              v-model="adjustDateFrom"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Até (opcional)</label>
+            <input
+              v-model="adjustDateTo"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <ProviderPicker v-model="provider" :providers="providers" />
+          <div class="flex gap-2">
+          <button
+            v-if="daysBeforeAdjust"
+            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+            @click="undoAdjust"
+          >
+            Desfazer
+          </button>
+          <button
+            :disabled="!adjustText.trim() || saving"
+            class="px-4 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap"
+            :class="adjustText.trim() && !saving
+              ? 'bg-white text-zinc-900 hover:bg-zinc-100'
+              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
+            @click="runAdjustment"
+          >
+            {{ saving ? 'Aplicando...' : 'Aplicar' }}
+          </button>
+          </div>
+        </div>
+      </section>
+
+      <div
+        v-if="error"
+        class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 text-sm text-red-300"
+      >
+        {{ error }}
+      </div>
+
       <CollapsibleBox v-if="result.warnings.length" variant="amber">
         <template #title>Avisos ({{ result.warnings.length }})</template>
         <ul class="space-y-1">
@@ -56,21 +126,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import axios from 'axios'
 import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
+import ProviderPicker from '../../components/ProviderPicker.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
+import { useProviders } from '../../composables/useProviders'
 import { sortByDate } from '../../lib/competence'
-import type { AnalyzeTimesheetResponse, DayEntry } from '@hermes/types'
+import type { AnalyzeTimesheetResponse, DayEntry, AIProvider } from '@hermes/types'
 
 const route = useRoute()
-const { downloadCsv, updateAnalysis, loading: saving } = useTimesheet()
+const { downloadCsv, updateAnalysis, adjustDays, error, loading: saving } = useTimesheet()
+const { providers } = useProviders()
 const result = ref<AnalyzeTimesheetResponse | null>(null)
 const editableDays = ref<DayEntry[]>([])
 const loading = ref(true)
 const pageErrors = computed(() => result.value?.pageLog.filter((p) => p.status === 'error') ?? [])
+
+const provider = ref<AIProvider>('claude')
+const showAdjust = ref(false)
+const adjustText = ref('')
+const adjustDateFrom = ref('')
+const adjustDateTo = ref('')
+const daysBeforeAdjust = ref<DayEntry[] | null>(null)
+
+// Same default as HomeView: use whichever provider the user configured.
+watch(providers, (val) => {
+  if (!val || val[provider.value]) return
+  const configured = (['claude', 'gpt', 'gemini'] as const).find((k) => val[k])
+  if (configured) provider.value = configured
+})
 
 onMounted(async () => {
   try {
@@ -87,6 +174,37 @@ onMounted(async () => {
 function handleDownload() {
   if (!result.value?.csvContent) return
   downloadCsv(result.value.csvContent, Number(route.params.id))
+}
+
+function toBRDate(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+// Applies the judge's determination over the saved days; nothing is persisted
+// until "Salvar alterações", and the snapshot allows one-click undo.
+async function runAdjustment() {
+  if (!adjustText.value.trim() || !result.value) return
+
+  const snapshot = JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[]
+  const adjusted = await adjustDays(
+    editableDays.value,
+    adjustText.value,
+    adjustDateFrom.value ? toBRDate(adjustDateFrom.value) : '',
+    adjustDateTo.value ? toBRDate(adjustDateTo.value) : '',
+    provider.value,
+  )
+  if (!adjusted) return
+
+  daysBeforeAdjust.value = snapshot
+  editableDays.value = sortByDate(adjusted.days)
+  result.value = { ...result.value, warnings: [...result.value.warnings, ...adjusted.warnings] }
+}
+
+function undoAdjust() {
+  if (!daysBeforeAdjust.value) return
+  editableDays.value = daysBeforeAdjust.value
+  daysBeforeAdjust.value = null
 }
 
 async function handleSave() {
