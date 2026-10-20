@@ -13,7 +13,7 @@
         aria-label="Página"
         class="bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 min-w-0"
       >
-        <option v-for="(label, i) in pageLabels" :key="i" :value="i">{{ label }}</option>
+        <option v-for="(p, i) in pages" :key="i" :value="i">{{ p.label }}</option>
       </select>
       <button
         :disabled="page === pageCount - 1"
@@ -65,7 +65,7 @@
       <tbody>
         <tr
           v-for="(day, idx) in pageDays"
-          :key="page * PAGE_SIZE + idx"
+          :key="(pages[page]?.start ?? 0) + idx"
           class="border-b border-zinc-700/60 last:border-0"
           :class="idx % 2 === 0 ? 'bg-transparent' : 'bg-zinc-700/20'"
         >
@@ -114,7 +114,7 @@
         aria-label="Página"
         class="bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 min-w-0"
       >
-        <option v-for="(label, i) in pageLabels" :key="i" :value="i">{{ label }}</option>
+        <option v-for="(p, i) in pages" :key="i" :value="i">{{ p.label }}</option>
       </select>
       <button
         :disabled="page === pageCount - 1"
@@ -139,6 +139,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, toRaw } from 'vue'
 import { useCopyColumn } from '../composables/useCopyColumn'
+import { monthPages } from '../lib/days'
 import type { DayEntry, Shift } from '@hermes/types'
 
 const props = defineProps<{ days: DayEntry[] }>()
@@ -166,18 +167,15 @@ watch(() => props.days, (days) => {
   editableDays.value = days.map((d) => ({ date: d.date, shifts: padShifts(d.shifts) }))
 })
 
-// 30 days per page — rendering every day of a multi-year card at once means
-// thousands of inputs, which makes the page sluggish.
-const PAGE_SIZE = 30
+// One calendar month per page — rendering every day of a multi-year card at
+// once means thousands of inputs, which makes the page sluggish.
 const page = ref(0)
-const pageCount = computed(() => Math.max(1, Math.ceil(editableDays.value.length / PAGE_SIZE)))
-const pageDays = computed(() => editableDays.value.slice(page.value * PAGE_SIZE, (page.value + 1) * PAGE_SIZE))
-const pageLabels = computed(() =>
-  Array.from({ length: pageCount.value }, (_, i) => {
-    const chunk = editableDays.value.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE)
-    return `${chunk[0]?.date || '—'} a ${chunk[chunk.length - 1]?.date || '—'}`
-  }),
-)
+const pages = computed(() => monthPages(editableDays.value.map((d) => d.date)))
+const pageCount = computed(() => Math.max(1, pages.value.length))
+const pageDays = computed(() => {
+  const p = pages.value[page.value]
+  return p ? editableDays.value.slice(p.start, p.end) : []
+})
 // stay on a valid page when days are removed
 watch(pageCount, (n) => { if (page.value > n - 1) page.value = n - 1 })
 
