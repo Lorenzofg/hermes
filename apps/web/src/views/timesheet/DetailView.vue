@@ -116,6 +116,8 @@
         @undo="undoPresume"
       />
 
+      <StatusBanner :busy="busy" :notice="notice" @close="notice = null" />
+
       <div
         v-if="error"
         class="border border-red-700 bg-red-900/30 rounded-lg px-5 py-4 text-sm text-red-300"
@@ -150,6 +152,8 @@ import EditableTable from '../../components/EditableTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import WarningGroups from '../../components/WarningGroups.vue'
 import PresumeMissingPanel from '../../components/PresumeMissingPanel.vue'
+import StatusBanner from '../../components/StatusBanner.vue'
+import { countChangedDays } from '../../lib/days'
 import { missingMonths, withoutMissing } from '../../lib/warnings'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
@@ -174,6 +178,11 @@ const daysBeforeAdjust = ref<DayEntry[] | null>(null)
 const showPresume = ref(false)
 const daysBeforePresume = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
 const missing = computed(() => missingMonths(result.value?.warnings ?? []))
+
+const busy = ref<string | null>(null)
+const notice = ref<string | null>(null)
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 // Same default as HomeView: use whichever provider the user configured.
 watch(providers, (val) => {
@@ -210,32 +219,38 @@ async function runAdjustment() {
   if (!adjustText.value.trim() || !result.value) return
 
   const snapshot = JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[]
+  notice.value = null
+  busy.value = 'Aplicando o ajuste da determinação…'
   const adjusted = await adjustDays(
     editableDays.value,
     adjustText.value,
     adjustDateFrom.value ? toBRDate(adjustDateFrom.value) : '',
     adjustDateTo.value ? toBRDate(adjustDateTo.value) : '',
     provider.value,
-  )
+  ).finally(() => { busy.value = null })
   if (!adjusted) return
 
   daysBeforeAdjust.value = snapshot
   showAdjust.value = false
   editableDays.value = sortByDate(adjusted.days)
   result.value = { ...result.value, warnings: [...result.value.warnings, ...adjusted.warnings] }
+  notice.value = `Ajuste aplicado: ${plural(countChangedDays(snapshot, editableDays.value), 'dia alterado', 'dias alterados')}. Confira a tabela e salve para gravar.`
 }
 
 // Fills the months the defendant never attached; persisted only on "Salvar alterações".
 async function runPresume(months: string[], text: string) {
   if (!result.value) return
   const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...result.value.warnings] }
-  const presumed = await presumeMissing(editableDays.value, months, text, provider.value)
+  notice.value = null
+  busy.value = 'Presumindo os meses faltantes…'
+  const presumed = await presumeMissing(editableDays.value, months, text, provider.value).finally(() => { busy.value = null })
   if (!presumed) return
 
   daysBeforePresume.value = snapshot
   showPresume.value = false
   editableDays.value = sortByDate(presumed.days)
   result.value = { ...result.value, warnings: [...withoutMissing(result.value.warnings, months), ...presumed.warnings] }
+  notice.value = `Meses presumidos: ${months.join(', ')} — ${plural(countChangedDays(snapshot.days, editableDays.value), 'dia gerado', 'dias gerados')}. Confira a tabela e salve para gravar.`
 }
 
 function undoPresume() {
@@ -243,12 +258,14 @@ function undoPresume() {
   editableDays.value = daysBeforePresume.value.days
   result.value = { ...result.value, warnings: daysBeforePresume.value.warnings }
   daysBeforePresume.value = null
+  notice.value = 'Presunção desfeita.'
 }
 
 function undoAdjust() {
   if (!daysBeforeAdjust.value) return
   editableDays.value = daysBeforeAdjust.value
   daysBeforeAdjust.value = null
+  notice.value = 'Ajuste desfeito.'
 }
 
 async function handleSave() {
@@ -256,5 +273,6 @@ async function handleSave() {
   const updated = await updateAnalysis(Number(route.params.id), editableDays.value, result.value.warnings)
   if (!updated || !result.value) return
   result.value = { ...result.value, days: editableDays.value, csvContent: updated.csvContent, totalDays: editableDays.value.length }
+  notice.value = 'Alterações salvas.'
 }
 </script>

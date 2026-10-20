@@ -222,6 +222,8 @@
         @undo="undoPresume"
       />
 
+      <StatusBanner :busy="busy" :notice="notice" @close="notice = null" />
+
       <CollapsibleBox v-if="warnings.length" variant="amber">
         <template #title>Avisos da IA ({{ warnings.length }})</template>
         <WarningGroups :warnings="warnings" />
@@ -279,6 +281,8 @@ import ResultTable from '../../components/ResultTable.vue'
 import CollapsibleBox from '../../components/CollapsibleBox.vue'
 import WarningGroups from '../../components/WarningGroups.vue'
 import PresumeMissingPanel from '../../components/PresumeMissingPanel.vue'
+import StatusBanner from '../../components/StatusBanner.vue'
+import { countChangedDays } from '../../lib/days'
 import { missingMonths, withoutMissing } from '../../lib/warnings'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
@@ -325,6 +329,11 @@ const warnings = ref<string[]>([])
 const showPresume = ref(false)
 const daysBeforePresume = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
 const missing = computed(() => missingMonths(warnings.value))
+
+const busy = ref<string | null>(null)
+const notice = ref<string | null>(null)
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 const pageLog = ref<PageLogEntry[]>([])
 const fileName = ref('')
 const usage = ref<{ inputTokens: number; outputTokens: number } | null>(null)
@@ -391,19 +400,22 @@ async function runAdjustment() {
   if (!adjustText.value.trim()) return
 
   const snapshot = JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[]
+  notice.value = null
+  busy.value = 'Aplicando o ajuste da determinação…'
   const result = await adjustDays(
     editableDays.value,
     adjustText.value,
     adjustDateFrom.value ? toBRDate(adjustDateFrom.value) : '',
     adjustDateTo.value ? toBRDate(adjustDateTo.value) : '',
     provider.value,
-  )
+  ).finally(() => { busy.value = null })
   if (!result) return
 
   daysBeforeAdjust.value = snapshot
   showAdjust.value = false
   editableDays.value = toEditable(result.days)
   warnings.value = [...warnings.value, ...result.warnings]
+  notice.value = `Ajuste aplicado: ${plural(countChangedDays(snapshot, editableDays.value), 'dia alterado', 'dias alterados')}. Confira a tabela e salve para gravar.`
   if (usage.value) {
     usage.value = {
       inputTokens:  usage.value.inputTokens + result.usage.inputTokens,
@@ -415,13 +427,16 @@ async function runAdjustment() {
 // Fills the months the defendant never attached; snapshot allows one-click undo.
 async function runPresume(months: string[], text: string) {
   const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...warnings.value] }
-  const result = await presumeMissing(editableDays.value, months, text, provider.value)
+  notice.value = null
+  busy.value = 'Presumindo os meses faltantes…'
+  const result = await presumeMissing(editableDays.value, months, text, provider.value).finally(() => { busy.value = null })
   if (!result) return
 
   daysBeforePresume.value = snapshot
   showPresume.value = false
   editableDays.value = toEditable(result.days)
   warnings.value = [...withoutMissing(warnings.value, months), ...result.warnings]
+  notice.value = `Meses presumidos: ${months.join(', ')} — ${plural(countChangedDays(snapshot.days, editableDays.value), 'dia gerado', 'dias gerados')}. Confira a tabela e salve para gravar.`
   if (usage.value) {
     usage.value = {
       inputTokens:  usage.value.inputTokens + result.usage.inputTokens,
@@ -435,12 +450,14 @@ function undoPresume() {
   editableDays.value = daysBeforePresume.value.days
   warnings.value = daysBeforePresume.value.warnings
   daysBeforePresume.value = null
+  notice.value = 'Presunção desfeita.'
 }
 
 function undoAdjust() {
   if (!daysBeforeAdjust.value) return
   editableDays.value = daysBeforeAdjust.value
   daysBeforeAdjust.value = null
+  notice.value = 'Ajuste desfeito.'
 }
 
 async function handleExportCsv() {
@@ -480,6 +497,7 @@ function reset() {
   daysBeforeAdjust.value = null
   showPresume.value = false
   daysBeforePresume.value = null
+  notice.value = null
   warnings.value = []
   pageLog.value = []
   fileName.value = ''

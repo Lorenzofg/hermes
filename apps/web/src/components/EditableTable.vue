@@ -1,5 +1,30 @@
 <template>
-  <div class="bg-zinc-800 border border-zinc-700 rounded-lg overflow-x-auto">
+  <div class="bg-zinc-800 border border-zinc-700 rounded-lg">
+    <div v-if="pageCount > 1" class="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-zinc-700">
+      <button
+        :disabled="page === 0"
+        class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-40 whitespace-nowrap"
+        @click="page--"
+      >
+        ‹ Anterior
+      </button>
+      <select
+        v-model="page"
+        aria-label="Página"
+        class="bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 min-w-0"
+      >
+        <option v-for="(label, i) in pageLabels" :key="i" :value="i">{{ label }}</option>
+      </select>
+      <button
+        :disabled="page === pageCount - 1"
+        class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-40 whitespace-nowrap"
+        @click="page++"
+      >
+        Próxima ›
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-zinc-700">
@@ -39,8 +64,8 @@
       </thead>
       <tbody>
         <tr
-          v-for="(day, idx) in editableDays"
-          :key="idx"
+          v-for="(day, idx) in pageDays"
+          :key="page * PAGE_SIZE + idx"
           class="border-b border-zinc-700/60 last:border-0"
           :class="idx % 2 === 0 ? 'bg-transparent' : 'bg-zinc-700/20'"
         >
@@ -74,6 +99,31 @@
         </tr>
       </tbody>
     </table>
+    </div>
+
+    <div v-if="pageCount > 1" class="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-zinc-700">
+      <button
+        :disabled="page === 0"
+        class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-40 whitespace-nowrap"
+        @click="page--"
+      >
+        ‹ Anterior
+      </button>
+      <select
+        v-model="page"
+        aria-label="Página"
+        class="bg-zinc-700 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 min-w-0"
+      >
+        <option v-for="(label, i) in pageLabels" :key="i" :value="i">{{ label }}</option>
+      </select>
+      <button
+        :disabled="page === pageCount - 1"
+        class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-40 whitespace-nowrap"
+        @click="page++"
+      >
+        Próxima ›
+      </button>
+    </div>
 
     <div class="px-4 py-3 border-t border-zinc-700">
       <button
@@ -87,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, toRaw } from 'vue'
 import { useCopyColumn } from '../composables/useCopyColumn'
 import type { DayEntry, Shift } from '@hermes/types'
 
@@ -109,11 +159,34 @@ const editableDays = ref<DayEntry[]>(
 
 watch(editableDays, (val) => emit('update:days', val), { deep: true })
 
+// The parent echoes back the array emitted above; any other array means the
+// days were replaced from outside (adjust, presume, undo) — show those.
+watch(() => props.days, (days) => {
+  if (toRaw(days) === toRaw(editableDays.value)) return
+  editableDays.value = days.map((d) => ({ date: d.date, shifts: padShifts(d.shifts) }))
+})
+
+// 30 days per page — rendering every day of a multi-year card at once means
+// thousands of inputs, which makes the page sluggish.
+const PAGE_SIZE = 30
+const page = ref(0)
+const pageCount = computed(() => Math.max(1, Math.ceil(editableDays.value.length / PAGE_SIZE)))
+const pageDays = computed(() => editableDays.value.slice(page.value * PAGE_SIZE, (page.value + 1) * PAGE_SIZE))
+const pageLabels = computed(() =>
+  Array.from({ length: pageCount.value }, (_, i) => {
+    const chunk = editableDays.value.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE)
+    return `${chunk[0]?.date || '—'} a ${chunk[chunk.length - 1]?.date || '—'}`
+  }),
+)
+// stay on a valid page when days are removed
+watch(pageCount, (n) => { if (page.value > n - 1) page.value = n - 1 })
+
 function addDay() {
   editableDays.value.push({
     date: '',
     shifts: Array.from({ length: 6 }, () => ({ clockIn: '', clockOut: '' })),
   })
+  page.value = pageCount.value - 1 // show the new row
 }
 
 const { copiedColumn, copyColumn } = useCopyColumn()
