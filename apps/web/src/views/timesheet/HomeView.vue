@@ -130,7 +130,7 @@
           <button
             class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
             :class="showAdjust ? 'bg-zinc-700' : ''"
-            @click="showAdjust = !showAdjust"
+            @click="showAdjust = !showAdjust; showPresume = false"
           >
             Ajustar pela determinação
           </button>
@@ -138,7 +138,7 @@
             v-if="missing.length || daysBeforePresume"
             class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
             :class="showPresume ? 'bg-zinc-700' : ''"
-            @click="showPresume = !showPresume"
+            @click="showPresume = !showPresume; showAdjust = false"
           >
             Presumir meses faltantes
           </button>
@@ -212,7 +212,7 @@
       </section>
 
       <PresumeMissingPanel
-        v-if="showPresume"
+        v-show="showPresume"
         v-model:provider="provider"
         :months="missing"
         :providers="providers"
