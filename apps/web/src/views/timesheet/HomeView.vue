@@ -128,6 +128,13 @@
         </h2>
         <div class="flex gap-2">
           <button
+            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+            :class="showAdjust ? 'bg-zinc-700' : ''"
+            @click="showAdjust = !showAdjust"
+          >
+            Ajustar pela determinação
+          </button>
+          <button
             :disabled="loading"
             class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
             @click="handleExportCsv"
@@ -143,6 +150,58 @@
           </button>
         </div>
       </div>
+
+      <section v-if="showAdjust" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
+        <p class="text-xs text-zinc-500">
+          Cole o trecho da decisão que altera o que foi registrado — por exemplo, um intervalo de 1h no lugar das 2h marcadas. Os horários são extraídos do texto e aplicados aos dias da tabela; o período é opcional (vazio = todos os dias).
+        </p>
+
+        <textarea
+          v-model="adjustText"
+          rows="4"
+          placeholder="Cole aqui o trecho da decisão..."
+          class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
+        />
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">De (opcional)</label>
+            <input
+              v-model="adjustDateFrom"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Até (opcional)</label>
+            <input
+              v-model="adjustDateTo"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2">
+          <button
+            v-if="daysBeforeAdjust"
+            class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+            @click="undoAdjust"
+          >
+            Desfazer
+          </button>
+          <button
+            :disabled="!adjustText.trim() || loading"
+            class="px-4 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap"
+            :class="adjustText.trim() && !loading
+              ? 'bg-white text-zinc-900 hover:bg-zinc-100'
+              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
+            @click="runAdjustment"
+          >
+            {{ loading ? 'Aplicando...' : 'Aplicar' }}
+          </button>
+        </div>
+      </section>
 
       <CollapsibleBox v-if="warnings.length" variant="amber">
         <template #title>Avisos da IA ({{ warnings.length }})</template>
@@ -210,7 +269,7 @@ import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } fro
 
 type Step = 'upload' | 'review' | 'saved'
 
-const { loading, error, progress, analyzePreview, analyzePresumed, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
+const { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, saveAnalysis, downloadCsv, exportCsv } = useTimesheet()
 const { providers } = useProviders()
 
 const pageErrors = computed(() => pageLog.value.filter((p) => p.status === 'error'))
@@ -237,6 +296,11 @@ watch(providers, (val) => {
 })
 
 const editableDays = ref<DayEntry[]>([])
+const showAdjust = ref(false)
+const adjustText = ref('')
+const adjustDateFrom = ref('')
+const adjustDateTo = ref('')
+const daysBeforeAdjust = ref<DayEntry[] | null>(null)
 const warnings = ref<string[]>([])
 const pageLog = ref<PageLogEntry[]>([])
 const fileName = ref('')
@@ -246,6 +310,17 @@ const savedCsv = ref('')
 const finalResult = ref<AnalyzeTimesheetResponse>({
   days: [], csvContent: '', totalDays: 0, warnings: [], pageLog: [],
 })
+
+// The table always shows 6 shift columns, so pad every day up to 6.
+function toEditable(days: DayEntry[]): DayEntry[] {
+  return sortByDate(days).map((d) => ({
+    date: d.date,
+    shifts: [
+      ...d.shifts,
+      ...Array.from({ length: Math.max(0, 6 - d.shifts.length) }, () => ({ clockIn: '', clockOut: '' })),
+    ].slice(0, 6),
+  }))
+}
 
 async function runAnalysis() {
   if (!file.value) return
@@ -257,13 +332,7 @@ async function runAnalysis() {
   warnings.value = result.warnings
   pageLog.value  = result.pageLog
   usage.value    = result.usage
-  editableDays.value = sortByDate(result.days).map((d) => ({
-    date: d.date,
-    shifts: [
-      ...d.shifts,
-      ...Array.from({ length: Math.max(0, 6 - d.shifts.length) }, () => ({ clockIn: '', clockOut: '' })),
-    ].slice(0, 6),
-  }))
+  editableDays.value = toEditable(result.days)
 
   step.value = 'review'
 }
@@ -288,15 +357,41 @@ async function runPresumedAnalysis() {
   warnings.value = result.warnings
   pageLog.value  = result.pageLog
   usage.value    = result.usage
-  editableDays.value = sortByDate(result.days).map((d) => ({
-    date: d.date,
-    shifts: [
-      ...d.shifts,
-      ...Array.from({ length: Math.max(0, 6 - d.shifts.length) }, () => ({ clockIn: '', clockOut: '' })),
-    ].slice(0, 6),
-  }))
+  editableDays.value = toEditable(result.days)
 
   step.value = 'review'
+}
+
+// Applies the judge's determination over the days currently on the table,
+// keeping a snapshot so one click can't destroy what was scanned.
+async function runAdjustment() {
+  if (!adjustText.value.trim()) return
+
+  const snapshot = JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[]
+  const result = await adjustDays(
+    editableDays.value,
+    adjustText.value,
+    adjustDateFrom.value ? toBRDate(adjustDateFrom.value) : '',
+    adjustDateTo.value ? toBRDate(adjustDateTo.value) : '',
+    provider.value,
+  )
+  if (!result) return
+
+  daysBeforeAdjust.value = snapshot
+  editableDays.value = toEditable(result.days)
+  warnings.value = [...warnings.value, ...result.warnings]
+  if (usage.value) {
+    usage.value = {
+      inputTokens:  usage.value.inputTokens + result.usage.inputTokens,
+      outputTokens: usage.value.outputTokens + result.usage.outputTokens,
+    }
+  }
+}
+
+function undoAdjust() {
+  if (!daysBeforeAdjust.value) return
+  editableDays.value = daysBeforeAdjust.value
+  daysBeforeAdjust.value = null
 }
 
 async function handleExportCsv() {
@@ -329,6 +424,11 @@ function reset() {
   presumedDateFrom.value = ''
   presumedDateTo.value = ''
   editableDays.value = []
+  showAdjust.value = false
+  adjustText.value = ''
+  adjustDateFrom.value = ''
+  adjustDateTo.value = ''
+  daysBeforeAdjust.value = null
   warnings.value = []
   pageLog.value = []
   fileName.value = ''

@@ -96,6 +96,37 @@ export function useTimesheet() {
     }
   }
 
+  // Applies a judge's determination over days already on the review table —
+  // e.g. the card shows a 12h–14h break but the judge ordered 12h–13h.
+  async function adjustDays(
+    days: DayEntry[],
+    text: string,
+    dateFrom: string,
+    dateTo: string,
+    provider: AIProvider,
+  ): Promise<{ days: DayEntry[]; warnings: string[]; usage: { inputTokens: number; outputTokens: number } } | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data } = await axios.post('/api/timesheet/adjust-preview', {
+        days,
+        text,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        provider,
+      })
+      return data
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e)
+        ? (e.response?.data?.error ?? 'Falha ao aplicar a determinação.')
+        : 'Erro inesperado.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function saveAnalysis(
     days: DayEntry[],
     provider: AIProvider,
@@ -169,5 +200,5 @@ export function useTimesheet() {
     }
   }
 
-  return { loading, error, progress, analyzePreview, analyzePresumed, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
+  return { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
 }

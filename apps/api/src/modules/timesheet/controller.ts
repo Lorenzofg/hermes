@@ -2,7 +2,9 @@ import type { FastifyInstance } from 'fastify'
 import { processTimesheet } from './processor.js'
 import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis } from './service.js'
 import { generatePresumedDays } from './presumed.js'
+import { applyAdjustment, type Adjustment } from './adjust.js'
 import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
+import { ADJUSTMENT_PROMPT } from './adjust-prompt.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { MAX_PDF_BYTES } from '../../shared/pdf.js'
 import { callAIText } from '../../shared/ai.js'
@@ -180,6 +182,56 @@ export async function timesheetController(app: FastifyInstance) {
       }
 
       return reply.status(200).send(response)
+    },
+  )
+
+  // POST /api/timesheet/adjust-preview — applies a judge's determination over
+  // days already on the table ("o intervalo foi de 1h, não de 2h"). The AI only
+  // reads WHICH adjustment was determined; the arithmetic is done in code.
+  app.post<{ Body: { days: DayEntry[]; text: string; dateFrom?: string; dateTo?: string; provider?: AIProvider } }>(
+    '/adjust-preview',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { days, text, dateFrom, dateTo } = request.body
+      const provider = request.body.provider ?? 'claude'
+
+      if (!days || !Array.isArray(days) || days.length === 0) {
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
+      }
+      if (!text?.trim()) {
+        return reply.status(400).send({ error: 'O texto da determinação é obrigatório.' })
+      }
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
+      }
+
+      // The AI may also answer { op: 'none' } when the text describes no
+      // applicable adjustment — rejected below.
+      let result
+      try {
+        result = await callAIText<Adjustment & { warnings?: string[] }>(ADJUSTMENT_PROMPT, text, provider, credentials)
+      } catch (err: any) {
+        return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
+      }
+
+      const adjustment = result.data
+      if (!['break', 'breakMinutes', 'setShifts'].includes(adjustment.op)) {
+        return reply.status(400).send({
+          error: adjustment.warnings?.[0] ?? 'Não foi possível identificar um ajuste aplicável no texto informado.',
+        })
+      }
+
+      const adjusted = applyAdjustment(days, adjustment, dateFrom, dateTo)
+
+      return reply.status(200).send({
+        days:      adjusted,
+        csvContent: generateCsv(adjusted),
+        totalDays: adjusted.length,
+        warnings:  adjustment.warnings ?? [],
+        usage:     result.usage,
+      })
     },
   )
 
