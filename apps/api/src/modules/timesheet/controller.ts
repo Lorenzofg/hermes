@@ -207,29 +207,29 @@ export async function timesheetController(app: FastifyInstance) {
         return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
-      // The AI may also answer { op: 'none' } when the text describes no
-      // applicable adjustment — rejected below.
+      // The AI answers an empty list when the text describes no applicable
+      // adjustment — rejected below, as is any entry with an unknown op.
       let result
       try {
-        result = await callAIText<Adjustment & { warnings?: string[] }>(ADJUSTMENT_PROMPT, text, provider, credentials)
+        result = await callAIText<{ adjustments?: Adjustment[]; warnings?: string[] }>(ADJUSTMENT_PROMPT, text, provider, credentials)
       } catch (err: any) {
         return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
       }
 
-      const adjustment = result.data
-      if (!['break', 'breakMinutes', 'setShifts'].includes(adjustment.op)) {
+      const { adjustments = [], warnings = [] } = result.data
+      if (adjustments.length === 0 || adjustments.some((a) => !['break', 'breakMinutes', 'setShifts'].includes(a.op))) {
         return reply.status(400).send({
-          error: adjustment.warnings?.[0] ?? 'Não foi possível identificar um ajuste aplicável no texto informado.',
+          error: warnings[0] ?? 'Não foi possível identificar um ajuste aplicável no texto informado.',
         })
       }
 
-      const adjusted = applyAdjustment(days, adjustment, dateFrom, dateTo)
+      const adjusted = applyAdjustment(days, adjustments, dateFrom, dateTo)
 
       return reply.status(200).send({
         days:      adjusted,
         csvContent: generateCsv(adjusted),
         totalDays: adjusted.length,
-        warnings:  adjustment.warnings ?? [],
+        warnings,
         usage:     result.usage,
       })
     },

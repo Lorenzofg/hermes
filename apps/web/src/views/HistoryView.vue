@@ -100,10 +100,12 @@ onMounted(async () => {
 })
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const date = d.toISOString().slice(0, 10).split('-').reverse().join('/')
-  const time = d.toISOString().slice(11, 16)
-  return `${date} ${time}`
+  // The API sends UTC; always show Brasília time regardless of the browser's zone.
+  return new Date(iso).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).replace(',', '')
 }
 
 function formatTokens(n: number): string {

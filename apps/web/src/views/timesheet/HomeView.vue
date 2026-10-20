@@ -378,6 +378,7 @@ async function runAdjustment() {
   if (!result) return
 
   daysBeforeAdjust.value = snapshot
+  showAdjust.value = false
   editableDays.value = toEditable(result.days)
   warnings.value = [...warnings.value, ...result.warnings]
   if (usage.value) {

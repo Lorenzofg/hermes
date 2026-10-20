@@ -5,10 +5,11 @@ import type { DayEntry, Shift } from '@hermes/types'
  * only reads which override it is, the arithmetic below is deliberately not
  * left to the AI.
  */
-export type Adjustment =
+export type Adjustment = (
   | { op: 'break'; from: string; to: string }
   | { op: 'breakMinutes'; minutes: number }
   | { op: 'setShifts'; shifts: Shift[] }
+) & { weekdays?: number[] } // 0 = domingo … 6 = sábado; omitted = every other day
 
 function parseBRDate(s: string): Date {
   const [dd, mm, yyyy] = s.split('/').map(Number)
@@ -51,17 +52,22 @@ function adjustShifts(shifts: Shift[], adj: Adjustment): Shift[] {
 }
 
 /**
- * Applies the determination to the days already in the table. Days outside
- * [dateFrom, dateTo] (both optional, dd/MM/yyyy) are returned untouched, as
- * are days with no registered shift.
+ * Applies the determination to the days already in the table. Each day gets
+ * the adjustment listing its weekday, else the one without weekdays. Days
+ * outside [dateFrom, dateTo] (both optional, dd/MM/yyyy), with no matching
+ * adjustment, or with no registered shift are returned untouched.
  */
-export function applyAdjustment(days: DayEntry[], adj: Adjustment, dateFrom?: string, dateTo?: string): DayEntry[] {
+export function applyAdjustment(days: DayEntry[], adjs: Adjustment[], dateFrom?: string, dateTo?: string): DayEntry[] {
   const from = dateFrom ? parseBRDate(dateFrom).getTime() : -Infinity
   const to   = dateTo   ? parseBRDate(dateTo).getTime()   : Infinity
 
   return days.map((day) => {
-    const time = parseBRDate(day.date).getTime()
+    const date = parseBRDate(day.date)
+    const time = date.getTime()
     if (time < from || time > to) return day
+
+    const adj = adjs.find((a) => a.weekdays?.includes(date.getDay())) ?? adjs.find((a) => !a.weekdays?.length)
+    if (!adj) return day
 
     const shifts = day.shifts.filter((s) => s.clockIn || s.clockOut)
     if (shifts.length === 0) return day
