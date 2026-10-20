@@ -1,6 +1,6 @@
 <template>
   <div class="bg-zinc-800 border border-zinc-700 rounded-lg">
-    <div v-if="pageCount > 1" class="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-zinc-700">
+    <div v-if="editableDays.length" class="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-zinc-700">
       <button
         :disabled="page === 0"
         class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-40 whitespace-nowrap"
@@ -15,6 +15,12 @@
       >
         <option v-for="(p, i) in pages" :key="i" :value="i">{{ p.label }}</option>
       </select>
+      <button
+        class="px-3 py-1 text-xs font-semibold border border-red-800 text-red-400 rounded hover:bg-red-900/40 transition-colors whitespace-nowrap"
+        @click="removeMonth"
+      >
+        Excluir mês
+      </button>
       <button
         :disabled="page === pageCount - 1"
         class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-40 whitespace-nowrap"
@@ -60,6 +66,7 @@
               </button>
             </th>
           </template>
+          <th class="px-1 py-3"><span class="sr-only">Excluir</span></th>
         </tr>
       </thead>
       <tbody>
@@ -96,6 +103,16 @@
               />
             </td>
           </template>
+          <td class="px-1 py-2 text-center">
+            <button
+              class="text-zinc-500 hover:text-red-400 transition-colors px-1"
+              :title="`Excluir ${day.date || 'linha'}`"
+              :aria-label="`Excluir ${day.date || 'linha'}`"
+              @click="removeRow(idx)"
+            >
+              ✕
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -178,6 +195,17 @@ const pageDays = computed(() => {
 })
 // stay on a valid page when days are removed
 watch(pageCount, (n) => { if (page.value > n - 1) page.value = n - 1 })
+
+// Deletes only from the table; nothing is saved until the parent's save.
+function removeRow(idx: number) {
+  editableDays.value.splice((pages.value[page.value]?.start ?? 0) + idx, 1)
+}
+
+function removeMonth() {
+  const p = pages.value[page.value]
+  if (!p || !confirm(`Excluir ${p.label} da tabela?`)) return
+  editableDays.value.splice(p.start, p.end - p.start)
+}
 
 function addDay() {
   editableDays.value.push({
