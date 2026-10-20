@@ -12,11 +12,12 @@ function formatBRDate(d: Date): string {
 
 /**
  * Fills the given months (MM/yyyy) — ones the defendant never attached — with
- * the presumed schedule, plain date arithmetic. Days already on the table are
- * never overwritten, so a partially present month only gets its gaps filled.
+ * the presumed schedule, plain date arithmetic. Days with any punch are never
+ * overwritten; blank days (a page attached with nothing on it) are replaced.
  */
 export function fillMissingMonths(days: DayEntry[], months: string[], schedules: PresumedSchedule[]): DayEntry[] {
-  const present = new Set(days.map((d) => d.date))
+  const hasPunch = (d: DayEntry) => d.shifts.some((s) => s.clockIn || s.clockOut)
+  const present = new Set(days.filter(hasPunch).map((d) => d.date))
   const added: DayEntry[] = []
 
   for (const month of months) {
@@ -30,5 +31,6 @@ export function fillMissingMonths(days: DayEntry[], months: string[], schedules:
     }
   }
 
-  return [...days, ...added]
+  const replaced = new Set(added.map((d) => d.date))
+  return [...days.filter((d) => !replaced.has(d.date)), ...added]
 }

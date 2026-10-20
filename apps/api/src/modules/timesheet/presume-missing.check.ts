@@ -22,4 +22,9 @@ assert.deepEqual(filled.filter((d) => d.date === '03/03/2025'), existing)
 // February in a leap year, invalid month ignored
 assert.equal(fillMissingMonths([], ['02/2024', 'xx'], [{ weekdays: [0, 1, 2, 3, 4, 5, 6], shifts: sat }]).length, 29)
 
+// blank days (empty page) are replaced, not duplicated
+const blankMonth = fillMissingMonths([{ date: '03/03/2025', shifts: [{ clockIn: '', clockOut: '' }] }], ['03/2025'], schedules)
+assert.equal(blankMonth.length, 26)
+assert.deepEqual(blankMonth.find((d) => d.date === '03/03/2025'), { date: '03/03/2025', shifts: week })
+
 console.log('presume-missing.check: ok')
