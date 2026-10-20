@@ -34,6 +34,7 @@
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-zinc-700">
+          <th class="pl-2 pr-0 py-3"><span class="sr-only">Excluir</span></th>
           <th class="px-2 py-3 text-left text-xs font-semibold tracking-widest uppercase text-zinc-400">
             <button
               class="flex items-center gap-1 hover:text-zinc-100 transition-colors"
@@ -66,7 +67,6 @@
               </button>
             </th>
           </template>
-          <th class="px-1 py-3"><span class="sr-only">Excluir</span></th>
         </tr>
       </thead>
       <tbody>
@@ -76,6 +76,16 @@
           class="border-b border-zinc-700/60 last:border-0"
           :class="idx % 2 === 0 ? 'bg-transparent' : 'bg-zinc-700/20'"
         >
+          <td class="pl-2 pr-0 py-2 text-center">
+            <button
+              class="text-zinc-500 hover:text-red-400 transition-colors px-1"
+              :title="`Excluir ${day.date || 'linha'}`"
+              :aria-label="`Excluir ${day.date || 'linha'}`"
+              @click="removeRow(idx)"
+            >
+              ✕
+            </button>
+          </td>
           <td class="px-2 py-2">
             <input
               v-model="day.date"
@@ -103,16 +113,6 @@
               />
             </td>
           </template>
-          <td class="px-1 py-2 text-center">
-            <button
-              class="text-zinc-500 hover:text-red-400 transition-colors px-1"
-              :title="`Excluir ${day.date || 'linha'}`"
-              :aria-label="`Excluir ${day.date || 'linha'}`"
-              @click="removeRow(idx)"
-            >
-              ✕
-            </button>
-          </td>
         </tr>
       </tbody>
     </table>
