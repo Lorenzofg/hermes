@@ -16,7 +16,7 @@
           v-if="result"
           class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
           :class="showAdjust ? 'bg-zinc-700' : ''"
-          @click="showAdjust = !showAdjust; showPresume = false"
+          @click="showAdjust = !showAdjust; showPresume = false; showAddPeriod = false"
         >
           Ajustar pela determinação
         </button>
@@ -24,9 +24,17 @@
           v-if="result && (missing.length || daysBeforePresume)"
           class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
           :class="showPresume ? 'bg-zinc-700' : ''"
-          @click="showPresume = !showPresume; showAdjust = false"
+          @click="showPresume = !showPresume; showAdjust = false; showAddPeriod = false"
         >
           Presumir meses faltantes
+        </button>
+        <button
+          v-if="result"
+          class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+          :class="showAddPeriod ? 'bg-zinc-700' : ''"
+          @click="showAddPeriod = !showAddPeriod; showAdjust = false; showPresume = false"
+        >
+          Acrescentar período
         </button>
         <button
           v-if="result"
@@ -116,6 +124,42 @@
         @undo="undoPresume"
       />
 
+      <section v-if="showAddPeriod" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
+        <p class="text-xs text-zinc-500">
+          Cole o trecho da decisão que manda acrescentar um período — por exemplo, "acrescente o período de 15/06/2021 a 30/09/2022, de segunda a sexta das 08:00 às 12:00 e das 14:00 às 19:30, e aos sábados das 08:00 às 19:00". O período e os horários são extraídos do texto; os dias que já têm marcação não são alterados.
+        </p>
+
+        <textarea
+          v-model="addPeriodText"
+          rows="4"
+          placeholder="Cole aqui o trecho da decisão..."
+          class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
+        />
+
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <ProviderPicker v-model="provider" :providers="providers" />
+          <div class="flex gap-2">
+            <button
+              v-if="daysBeforeAddPeriod"
+              class="px-4 py-1.5 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors whitespace-nowrap"
+              @click="undoAddPeriod"
+            >
+              Desfazer
+            </button>
+            <button
+              :disabled="!addPeriodText.trim() || saving"
+              class="px-4 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap"
+              :class="addPeriodText.trim() && !saving
+                ? 'bg-white text-zinc-900 hover:bg-zinc-100'
+                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
+              @click="runAddPeriod"
+            >
+              {{ saving ? 'Acrescentando...' : 'Acrescentar' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
       <StatusBanner :busy="busy" :notice="notice" @close="notice = null" />
 
       <div
@@ -162,7 +206,7 @@ import { sortByDate } from '../../lib/competence'
 import type { AnalyzeTimesheetResponse, DayEntry, AIProvider } from '@hermes/types'
 
 const route = useRoute()
-const { downloadCsv, updateAnalysis, adjustDays, presumeMissing, error, loading: saving } = useTimesheet()
+const { downloadCsv, updateAnalysis, adjustDays, presumeMissing, addPeriod, error, loading: saving } = useTimesheet()
 const { providers } = useProviders()
 const result = ref<AnalyzeTimesheetResponse | null>(null)
 const editableDays = ref<DayEntry[]>([])
@@ -177,6 +221,9 @@ const adjustDateTo = ref('')
 const daysBeforeAdjust = ref<DayEntry[] | null>(null)
 const showPresume = ref(false)
 const daysBeforePresume = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
+const showAddPeriod = ref(false)
+const addPeriodText = ref('')
+const daysBeforeAddPeriod = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
 const missing = computed(() => missingMonths(result.value?.warnings ?? []))
 
 const busy = ref<string | null>(null)
@@ -259,6 +306,31 @@ function undoPresume() {
   result.value = { ...result.value, warnings: daysBeforePresume.value.warnings }
   daysBeforePresume.value = null
   notice.value = 'Presunção desfeita.'
+}
+
+// Adds the period stated in the determination; days already on the table keep
+// their punches. Persisted only on "Salvar alterações".
+async function runAddPeriod() {
+  if (!addPeriodText.value.trim() || !result.value) return
+  const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...result.value.warnings] }
+  notice.value = null
+  busy.value = 'Acrescentando o período…'
+  const added = await addPeriod(editableDays.value, addPeriodText.value, provider.value).finally(() => { busy.value = null })
+  if (!added) return
+
+  daysBeforeAddPeriod.value = snapshot
+  showAddPeriod.value = false
+  editableDays.value = sortByDate(added.days)
+  result.value = { ...result.value, warnings: [...result.value.warnings, ...added.warnings] }
+  notice.value = `Período acrescentado: ${plural(countChangedDays(snapshot.days, editableDays.value), 'dia gerado', 'dias gerados')}. Confira a tabela e salve para gravar.`
+}
+
+function undoAddPeriod() {
+  if (!daysBeforeAddPeriod.value || !result.value) return
+  editableDays.value = daysBeforeAddPeriod.value.days
+  result.value = { ...result.value, warnings: daysBeforeAddPeriod.value.warnings }
+  daysBeforeAddPeriod.value = null
+  notice.value = 'Período desfeito.'
 }
 
 function undoAdjust() {

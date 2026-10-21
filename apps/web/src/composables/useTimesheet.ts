@@ -119,6 +119,29 @@ export function useTimesheet() {
     }
   }
 
+  // Adds a period the determination itself states, with the weekly pattern it
+  // describes; days already recorded are kept.
+  async function addPeriod(
+    days: DayEntry[],
+    text: string,
+    provider: AIProvider,
+  ): Promise<{ days: DayEntry[]; warnings: string[]; usage: { inputTokens: number; outputTokens: number } } | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data } = await axios.post('/api/timesheet/add-period', { days, text, provider })
+      return data
+    } catch (e: unknown) {
+      error.value = axios.isAxiosError(e)
+        ? (e.response?.data?.error ?? 'Falha ao acrescentar o período.')
+        : 'Erro inesperado.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Applies a judge's determination over days already on the review table —
   // e.g. the card shows a 12h–14h break but the judge ordered 12h–13h.
   async function adjustDays(
@@ -223,5 +246,5 @@ export function useTimesheet() {
     }
   }
 
-  return { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, presumeMissing, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
+  return { loading, error, progress, analyzePreview, analyzePresumed, adjustDays, presumeMissing, addPeriod, saveAnalysis, updateAnalysis, downloadCsv, exportCsv }
 }

@@ -7,6 +7,8 @@ import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
 import { ADJUSTMENT_PROMPT } from './adjust-prompt.js'
 import { fillMissingMonths, type PresumedSchedule } from './presume-missing.js'
 import { PRESUME_MISSING_PROMPT } from './presume-missing-prompt.js'
+import { addPeriodDays } from './add-period.js'
+import { ADD_PERIOD_PROMPT } from './add-period-prompt.js'
 import { startSSE, sendEvent, endSSE } from '../../shared/sse.js'
 import { callAIText } from '../../shared/ai.js'
 import { requireAuth } from '../../shared/auth.js'
@@ -263,6 +265,57 @@ export async function timesheetController(app: FastifyInstance) {
       return reply.status(200).send({
         days: filled,
         warnings: [...warnings, ...months.map((m) => `Mês presumido: ${m} — jornada presumida pela determinação`)],
+        usage: result.usage,
+      })
+    },
+  )
+
+  // POST /api/timesheet/add-period — adds a period the determination itself
+  // states ("acrescente de 15/06/2021 a 30/09/2022 a jornada X"). The AI reads
+  // the period and the weekly pattern; the days are generated in code, and
+  // days already recorded are never overwritten.
+  app.post<{ Body: { days: DayEntry[]; text: string; provider?: AIProvider } }>(
+    '/add-period',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { days, text } = request.body
+      const provider = request.body.provider ?? 'claude'
+
+      if (!Array.isArray(days)) {
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
+      }
+      if (!text?.trim()) {
+        return reply.status(400).send({ error: 'O texto da determinação é obrigatório.' })
+      }
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
+      }
+
+      let result
+      try {
+        result = await callAIText<{ dateFrom?: string; dateTo?: string; schedules?: PresumedSchedule[]; warnings?: string[] }>(
+          ADD_PERIOD_PROMPT,
+          text,
+          provider,
+          credentials,
+        )
+      } catch (err: any) {
+        return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
+      }
+
+      const { dateFrom = '', dateTo = '' } = result.data
+      const schedules = (result.data.schedules ?? []).filter((s) => s.weekdays?.length && s.shifts?.length)
+      const warnings = result.data.warnings ?? []
+      if (!dateFrom || !dateTo || schedules.length === 0) {
+        return reply.status(400).send({ error: warnings[0] ?? 'Não foi possível identificar o período e a jornada no texto informado.' })
+      }
+
+      const filled = addPeriodDays(days, dateFrom, dateTo, schedules)
+      return reply.status(200).send({
+        days: filled,
+        warnings: [...warnings, `Período presumido: ${dateFrom} a ${dateTo} — jornada presumida pela determinação`],
         usage: result.usage,
       })
     },
