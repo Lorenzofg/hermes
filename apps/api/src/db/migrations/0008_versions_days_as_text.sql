@@ -4,7 +4,8 @@
 ALTER TABLE "timesheet_analysis_versions" ADD COLUMN IF NOT EXISTS "total_days" integer DEFAULT 0 NOT NULL;
 --> statement-breakpoint
 UPDATE "timesheet_analysis_versions"
-SET "days" = (CASE WHEN jsonb_typeof("days") = 'string' THEN "days" #>> '{}' ELSE "days"::text END);
+SET "days" = ("days" #>> '{}')::jsonb
+WHERE jsonb_typeof("days") = 'string';
 --> statement-breakpoint
 ALTER TABLE "timesheet_analysis_versions" ALTER COLUMN "days" TYPE text USING "days"::text;
 --> statement-breakpoint
