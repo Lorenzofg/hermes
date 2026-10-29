@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { processTimesheet } from './processor.js'
-import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis, listVersions, restoreVersion } from './service.js'
+import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis, listVersions, restoreVersion, getVersionSnapshot } from './service.js'
+import { runChat, type ChatMessage } from './chat.js'
 import { generatePresumedDays } from './presumed.js'
 import { applyAdjustment, type Adjustment } from './adjust.js'
 import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
@@ -407,6 +408,51 @@ export async function timesheetController(app: FastifyInstance) {
 
       const result = await updateAnalysis(id, request.user.id, days, Array.isArray(warnings) ? warnings : undefined)
       if (!result) return reply.status(404).send({ error: 'Análise não encontrada.' })
+
+      return reply.send(result)
+    },
+  )
+
+  // POST /api/timesheet/chat — the floating assistant. The AI only picks
+  // actions; the same code behind the on-screen panels runs them, and nothing
+  // is persisted here (the table is saved from the review screen as usual).
+  app.post<{ Body: { days: DayEntry[]; warnings?: string[]; messages: ChatMessage[]; analysisId?: number; provider?: AIProvider } }>(
+    '/chat',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { days, warnings = [], messages } = request.body
+      const provider = request.body.provider ?? 'claude'
+
+      if (!Array.isArray(days)) {
+        return reply.status(400).send({ error: 'Nenhum dia fornecido.' })
+      }
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return reply.status(400).send({ error: 'Nenhuma mensagem fornecida.' })
+      }
+
+      const credentials = await getCredentials(request.user.id, provider)
+      if (!credentials) {
+        return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
+      }
+
+      const analysisId = request.body.analysisId
+      let versions: Awaited<ReturnType<typeof listVersions>> = null
+      let loadVersion: ((version: number) => Promise<{ days: DayEntry[]; warnings: string[] } | null>) | undefined
+
+      if (analysisId && Number.isInteger(analysisId)) {
+        versions = await listVersions(analysisId, request.user.id)
+        loadVersion = async (version) => getVersionSnapshot(analysisId, version, request.user.id)
+      }
+
+      const result = await runChat({
+        days,
+        warnings: Array.isArray(warnings) ? warnings : [],
+        messages,
+        provider,
+        credentials,
+        versions: versions ?? undefined,
+        loadVersion,
+      })
 
       return reply.send(result)
     },

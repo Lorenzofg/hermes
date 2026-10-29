@@ -18,6 +18,27 @@ export interface DayEntry {
   shifts: Shift[] // max 6 shifts
 }
 
+// Floating assistant: the user talks, the AI answers with actions that the
+// backend runs with the same code as the on-screen panels.
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatChange {
+  op: string
+  summary: string
+  ok: boolean
+}
+
+export interface ChatResponse {
+  reply: string
+  days: DayEntry[]
+  warnings: string[]
+  changes: ChatChange[]
+  usage: { inputTokens: number; outputTokens: number }
+}
+
 export interface AnalyzeTimesheetResponse {
   days: DayEntry[]
   csvContent: string

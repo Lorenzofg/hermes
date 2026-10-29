@@ -179,6 +179,24 @@ export async function listVersions(id: number, userId: number): Promise<Analysis
   }))
 }
 
+// Reads an old snapshot without touching the analysis — the chat loads a
+// version into the table and only "Salvar alterações" persists it.
+export async function getVersionSnapshot(id: number, version: number, userId: number) {
+  const [existing] = await db
+    .select({ id: timesheetAnalyses.id })
+    .from(timesheetAnalyses)
+    .where(and(eq(timesheetAnalyses.id, id), eq(timesheetAnalyses.userId, userId)))
+  if (!existing) return null
+
+  const [snapshot] = await db
+    .select({ days: timesheetAnalysisVersions.days, warnings: timesheetAnalysisVersions.warnings })
+    .from(timesheetAnalysisVersions)
+    .where(and(eq(timesheetAnalysisVersions.analysisId, id), eq(timesheetAnalysisVersions.version, version)))
+  if (!snapshot) return null
+
+  return { days: snapshot.days, warnings: snapshot.warnings }
+}
+
 export async function restoreVersion(id: number, version: number, userId: number) {
   const [existing] = await db
     .select({ id: timesheetAnalyses.id })

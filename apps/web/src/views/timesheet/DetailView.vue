@@ -232,6 +232,14 @@
       <EditableTable v-model:days="editableDays" />
     </template>
 
+    <ChatPanel
+      v-if="result"
+      v-model:days="editableDays"
+      v-model:warnings="result.warnings"
+      :provider="provider"
+      :analysis-id="Number(route.params.id)"
+    />
+
   </div>
 </template>
 
@@ -250,6 +258,7 @@ import ProviderPicker from '../../components/ProviderPicker.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
 import { sortByDate } from '../../lib/competence'
+import ChatPanel from '../../components/ChatPanel.vue'
 import type { AnalyzeTimesheetResponse, DayEntry, AIProvider } from '@hermes/types'
 
 const route = useRoute()

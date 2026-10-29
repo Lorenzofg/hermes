@@ -279,6 +279,13 @@
       </div>
     </section>
 
+    <ChatPanel
+      v-if="step === 'review'"
+      v-model:days="editableDays"
+      v-model:warnings="warnings"
+      :provider="provider"
+    />
+
   </div>
 </template>
 
@@ -295,6 +302,7 @@ import { countChangedDays } from '../../lib/days'
 import { missingMonths, withoutMissing } from '../../lib/warnings'
 import ProviderPicker from '../../components/ProviderPicker.vue'
 import ProgressBar from '../../components/ProgressBar.vue'
+import ChatPanel from '../../components/ChatPanel.vue'
 import { useTimesheet } from '../../composables/useTimesheet'
 import { useProviders } from '../../composables/useProviders'
 import { sortByDate } from '../../lib/competence'
