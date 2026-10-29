@@ -57,6 +57,13 @@
       "when": 1779600000000,
       "tag": "0007_shorten_versions_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779700000000,
+      "tag": "0008_versions_days_as_text",
+      "breakpoints": true
     }
   ]
 }

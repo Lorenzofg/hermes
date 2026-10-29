@@ -74,7 +74,8 @@ async function saveVersion(
     analysisId,
     version: Number(row?.latest ?? 0) + 1,
     source,
-    days,
+    days: JSON.stringify(days),
+    totalDays: days.length,
     warnings,
     csvContent,
   })
@@ -146,6 +147,19 @@ export async function updateAnalysis(
   return { csvContent }
 }
 
+// Days are stored as text (see schema.ts); be lenient with rows written before
+// the migration, when the value could already be an array.
+function parseDays(raw: unknown): DayEntry[] {
+  if (Array.isArray(raw)) return raw as DayEntry[]
+  if (typeof raw !== 'string') return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as DayEntry[]) : []
+  } catch {
+    return []
+  }
+}
+
 export interface AnalysisVersionSummary {
   version: number
   source: string
@@ -164,7 +178,7 @@ export async function listVersions(id: number, userId: number): Promise<Analysis
     .select({
       version:   timesheetAnalysisVersions.version,
       source:    timesheetAnalysisVersions.source,
-      totalDays: sql<number>`jsonb_array_length(${timesheetAnalysisVersions.days})`,
+      totalDays: timesheetAnalysisVersions.totalDays,
       createdAt: timesheetAnalysisVersions.createdAt,
     })
     .from(timesheetAnalysisVersions)
@@ -194,7 +208,7 @@ export async function getVersionSnapshot(id: number, version: number, userId: nu
     .where(and(eq(timesheetAnalysisVersions.analysisId, id), eq(timesheetAnalysisVersions.version, version)))
   if (!snapshot) return null
 
-  return { days: snapshot.days, warnings: snapshot.warnings }
+  return { days: parseDays(snapshot.days), warnings: snapshot.warnings }
 }
 
 export async function restoreVersion(id: number, version: number, userId: number) {
@@ -210,10 +224,11 @@ export async function restoreVersion(id: number, version: number, userId: number
     .where(and(eq(timesheetAnalysisVersions.analysisId, id), eq(timesheetAnalysisVersions.version, version)))
   if (!snapshot) return null
 
-  const restored = await updateAnalysis(id, userId, snapshot.days, snapshot.warnings, 'restore')
+  const days = parseDays(snapshot.days)
+  const restored = await updateAnalysis(id, userId, days, snapshot.warnings, 'restore')
   if (!restored) return null
 
-  return { ...restored, days: snapshot.days, warnings: snapshot.warnings }
+  return { ...restored, days, warnings: snapshot.warnings }
 }
 
 export async function listAnalyses(userId: number) {

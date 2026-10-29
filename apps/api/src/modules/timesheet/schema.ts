@@ -37,14 +37,16 @@ export const timesheetRecords = pgTable('timesheet_records', {
 })
 
 // Full snapshot of an analysis after each change, so any edit can be undone
-// from History. Days are kept as JSON: a version must restore exactly what the
-// table showed, independently of the record columns.
+// from History. Days are stored as a JSON string, not jsonb: drizzle +
+// postgres-js double-encode jsonb values on insert, which made every snapshot
+// a JSON scalar instead of an array. As text, what we write is what we read.
 export const timesheetAnalysisVersions = pgTable('timesheet_analysis_versions', {
   id:         serial('id').primaryKey(),
   analysisId: integer('analysis_id').notNull().references(() => timesheetAnalyses.id, { onDelete: 'cascade' }),
   version:    integer('version').notNull(),
   source:     text('source').notNull(),
-  days:       jsonb('days').$type<DayEntry[]>().notNull(),
+  days:       text('days').notNull(), // JSON.stringify(DayEntry[])
+  totalDays:  integer('total_days').notNull().default(0),
   warnings:   text('warnings').array().notNull().default(sql`'{}'`),
   csvContent: text('csv_content').notNull(),
   createdAt:  timestamp('created_at').defaultNow().notNull(),
