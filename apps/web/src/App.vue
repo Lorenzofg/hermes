@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-zinc-900 text-zinc-100">
 
     <header v-if="!$route.meta.public" class="border-b border-zinc-700 bg-zinc-800 sticky top-0 z-10">
-      <div class="mx-auto px-6 py-4 flex items-center justify-between" :class="$route.meta.wide ? 'max-w-7xl' : 'max-w-5xl'">
+      <div class="mx-auto px-6 py-4 flex items-center justify-between" :class="$route.meta.wide ? 'max-w-[1400px]' : 'max-w-5xl'">
         <RouterLink to="/timesheet" class="group">
           <h1 class="text-sm font-semibold tracking-widest uppercase text-zinc-100 group-hover:text-white transition-colors">
             Hermes
@@ -68,7 +68,7 @@
       </div>
     </header>
 
-    <main class="mx-auto px-6 py-10" :class="$route.meta.wide ? 'max-w-7xl' : 'max-w-5xl'">
+    <main class="mx-auto px-6 py-10" :class="$route.meta.wide ? 'max-w-[1400px]' : 'max-w-5xl'">
       <RouterView />
     </main>
 
