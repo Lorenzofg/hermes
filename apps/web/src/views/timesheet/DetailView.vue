@@ -58,8 +58,6 @@
     <div v-else-if="!result" class="text-sm text-red-400">Análise não encontrada.</div>
 
     <template v-else>
-      <div class="grid gap-4 min-[1360px]:grid-cols-[minmax(0,1fr)_300px]">
-        <aside class="space-y-4 min-[1360px]:col-start-2 min-[1360px]:row-start-1 min-[1360px]:sticky min-[1360px]:top-24 min-[1360px]:self-start min-[1360px]:max-h-[calc(100vh-7rem)] min-[1360px]:overflow-y-auto min-[1360px]:pr-1">
       <section v-if="versions.length > 0" class="bg-zinc-800 border border-zinc-700 rounded-lg">
         <button
           class="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -97,22 +95,6 @@
           </li>
         </ul>
       </section>
-
-      <CollapsibleBox v-if="result.warnings.length" variant="amber">
-        <template #title>Avisos ({{ result.warnings.length }})</template>
-        <WarningGroups :warnings="result.warnings" />
-      </CollapsibleBox>
-
-      <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Erros de Página ({{ pageErrors.length }} de {{ result.pageLog.length }} páginas)</template>
-        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Página {{ e.page }}</p>
-          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
-        </div>
-      </CollapsibleBox>
-        </aside>
-
-        <div class="space-y-4 min-w-0 min-[1360px]:col-start-1 min-[1360px]:row-start-1">
 
       <section v-if="showAdjust" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <p class="text-xs text-zinc-500">
@@ -244,9 +226,20 @@
         {{ error }}
       </div>
 
-      <EditableTable v-model:days="editableDays" />
+      <CollapsibleBox v-if="result.warnings.length" variant="amber">
+        <template #title>Avisos ({{ result.warnings.length }})</template>
+        <WarningGroups :warnings="result.warnings" />
+      </CollapsibleBox>
+
+      <CollapsibleBox v-if="pageErrors.length" variant="red">
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ result.pageLog.length }} páginas)</template>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Página {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
         </div>
-      </div>
+      </CollapsibleBox>
+
+      <EditableTable v-model:days="editableDays" />
     </template>
 
     <ChatPanel
