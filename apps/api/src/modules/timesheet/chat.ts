@@ -2,7 +2,7 @@ import type { DayEntry, Shift, AIProvider } from '@hermes/types'
 import { callAIText, type ProviderCredentials, type TokenUsage } from '../../shared/ai.js'
 import { CHAT_PROMPT } from './chat-prompt.js'
 import { ADJUSTMENT_PROMPT } from './adjust-prompt.js'
-import { applyAdjustment, type Adjustment } from './adjust.js'
+import { applyAdjustment, resolveCycle, type Adjustment } from './adjust.js'
 import { ADD_PERIOD_PROMPT } from './add-period-prompt.js'
 import { addPeriodDays } from './add-period.js'
 import { PRESUME_MISSING_PROMPT } from './presume-missing-prompt.js'
@@ -178,23 +178,14 @@ async function runAdjust(
     return { error: parsed.data.warnings?.[0] ?? 'Não identifiquei um ajuste aplicável no texto.' }
   }
 
-  const cycleWeeks = Number(parsed.data.cycleWeeks ?? 1)
-  const startDate = action.startDate || parsed.data.startDate || ''
-  if (!Number.isInteger(cycleWeeks) || cycleWeeks < 1 || cycleWeeks > 52) {
-    return { error: 'O ciclo informado na determinação é inválido.' }
-  }
-  if (cycleWeeks > 1 && !startDate) {
-    return { error: `Essa determinação tem um ciclo de ${cycleWeeks} semanas. Qual é o primeiro dia da semana 1?` }
-  }
+  const cycle = resolveCycle(action.startDate ?? parsed.data.startDate, parsed.data.cycleWeeks)
+  if (cycle.error) return { error: cycle.error }
 
-  const adjusted = applyAdjustment(days, adjustments, action.dateFrom || undefined, action.dateTo || undefined, {
-    startDate: startDate || undefined,
-    cycleWeeks,
-  })
+  const adjusted = applyAdjustment(days, adjustments, action.dateFrom || undefined, action.dateTo || undefined, cycle)
   const changed = countChangedDays(days, adjusted)
   const extra = [...(parsed.data.warnings ?? [])]
-  if (startDate && cycleWeeks > 1 && !isMonday(startDate)) {
-    extra.push(`O início informado (${startDate}) não é segunda-feira; as semanas foram contadas a partir dele.`)
+  if (cycle.startDate && cycle.cycleWeeks > 1 && !isMonday(cycle.startDate)) {
+    extra.push(`O início informado (${cycle.startDate}) não é segunda-feira; as semanas foram contadas a partir dele.`)
   }
 
   return {
@@ -215,7 +206,7 @@ async function runAddPeriod(
 ): Promise<ActionResult> {
   if (!action.text?.trim()) return { error: 'Faltou o texto da determinação para acrescentar o período.' }
 
-  const parsed = await callAIText<{ dateFrom?: string; dateTo?: string; schedules?: PresumedSchedule[]; warnings?: string[] }>(
+  const parsed = await callAIText<{ dateFrom?: string; dateTo?: string; startDate?: string; cycleWeeks?: number; schedules?: PresumedSchedule[]; warnings?: string[] }>(
     ADD_PERIOD_PROMPT,
     action.text,
     provider,
@@ -229,7 +220,13 @@ async function runAddPeriod(
     return { error: parsed.data.warnings?.[0] ?? 'Não identifiquei o período e a jornada no texto.' }
   }
 
-  const filled = addPeriodDays(days, dateFrom, dateTo, schedules)
+  const cycle = resolveCycle(
+    action.startDate ?? parsed.data.startDate ?? dateFrom,
+    parsed.data.cycleWeeks ?? Math.max(1, ...schedules.map((s) => s.week ?? 1)),
+  )
+  if (cycle.error) return { error: cycle.error }
+
+  const filled = addPeriodDays(days, dateFrom, dateTo, schedules, cycle)
   const added = countChangedDays(days, filled)
   return {
     days: filled,
@@ -250,7 +247,7 @@ async function runPresumeMissing(
   const months = (action.months ?? []).filter((m) => /^\d{2}\/\d{4}$/.test(m))
   if (months.length === 0) return { error: 'Quais meses faltantes devem ser presumidos (MM/AAAA)?' }
 
-  const parsed = await callAIText<{ schedules?: PresumedSchedule[]; warnings?: string[] }>(
+  const parsed = await callAIText<{ startDate?: string; cycleWeeks?: number; schedules?: PresumedSchedule[]; warnings?: string[] }>(
     PRESUME_MISSING_PROMPT,
     action.text,
     provider,
@@ -263,7 +260,13 @@ async function runPresumeMissing(
     return { error: parsed.data.warnings?.[0] ?? 'Não identifiquei uma jornada no texto.' }
   }
 
-  const filled = fillMissingMonths(days, months, schedules)
+  const cycle = resolveCycle(
+    action.startDate ?? parsed.data.startDate,
+    parsed.data.cycleWeeks ?? Math.max(1, ...schedules.map((s) => s.week ?? 1)),
+  )
+  if (cycle.error) return { error: cycle.error }
+
+  const filled = fillMissingMonths(days, months, schedules, cycle)
   const generated = countChangedDays(days, filled)
   return {
     days: filled,

@@ -102,12 +102,13 @@ export function useTimesheet() {
     months: string[],
     text: string,
     provider: AIProvider,
+    startDate?: string,
   ): Promise<{ days: DayEntry[]; warnings: string[]; usage: { inputTokens: number; outputTokens: number } } | null> {
     loading.value = true
     error.value = null
 
     try {
-      const { data } = await axios.post('/api/timesheet/presume-missing', { days, months, text, provider })
+      const { data } = await axios.post('/api/timesheet/presume-missing', { days, months, text, provider, startDate: startDate || undefined })
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)
@@ -125,12 +126,13 @@ export function useTimesheet() {
     days: DayEntry[],
     text: string,
     provider: AIProvider,
+    startDate?: string,
   ): Promise<{ days: DayEntry[]; warnings: string[]; usage: { inputTokens: number; outputTokens: number } } | null> {
     loading.value = true
     error.value = null
 
     try {
-      const { data } = await axios.post('/api/timesheet/add-period', { days, text, provider })
+      const { data } = await axios.post('/api/timesheet/add-period', { days, text, provider, startDate: startDate || undefined })
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)

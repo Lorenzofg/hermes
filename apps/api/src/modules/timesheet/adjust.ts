@@ -28,7 +28,7 @@ function parseBRDate(s: string): Date {
   return new Date(yyyy, mm - 1, dd)
 }
 
-function dateKey(s: string): number {
+export function dateKey(s: string): number {
   const [dd, mm, yyyy] = s.split('/').map(Number)
   return Date.UTC(yyyy, mm - 1, dd)
 }
@@ -68,8 +68,12 @@ function expandShift(s: CycleShift): Shift[] {
 
 // ponytail: the break is the gap between the 1st and 2nd shift; days with
 // more shifts keep the later ones untouched. Enough for intrajornada.
+export function expandShifts(shifts: CycleShift[]): Shift[] {
+  return shifts.flatMap(expandShift)
+}
+
 function adjustShifts(shifts: Shift[], adj: Adjustment): Shift[] {
-  if (adj.op === 'setShifts') return adj.shifts.flatMap(expandShift)
+  if (adj.op === 'setShifts') return expandShifts(adj.shifts)
 
   if (adj.op === 'break') {
     // No break registered: split the single shift, but only if the determined
@@ -93,7 +97,7 @@ function adjustShifts(shifts: Shift[], adj: Adjustment): Shift[] {
 
 // Which week of the repeating cycle a date falls on (1-based). The cycle runs
 // from the anchor in whole 7-day blocks, so no calendar-week alignment needed.
-function weekOfCycle(key: number, start: number, weeks: number): number {
+export function weekOfCycle(key: number, start: number, weeks: number): number {
   const cycle = weeks * 7
   const offset = ((Math.round((key - start) / 86_400_000) % cycle) + cycle) % cycle
   return Math.floor(offset / 7) + 1
@@ -133,4 +137,25 @@ export function applyAdjustment(
 
     return { date: day.date, shifts: adjustShifts(shifts, adj) }
   })
+}
+
+/**
+ * Validates the cycle an endpoint received (from the form or from the AI) and
+ * returns the anchor + length, or a ready-to-show error message. A roster with
+ * more than one week is meaningless without knowing where week 1 starts.
+ */
+export function resolveCycle(startDateRaw: unknown, cycleWeeksRaw: unknown): { startDate?: string; cycleWeeks: number; error?: string } {
+  const cycleWeeks = Number(cycleWeeksRaw ?? 1)
+  const startDate = typeof startDateRaw === 'string' ? startDateRaw.trim() : ''
+
+  if (!Number.isInteger(cycleWeeks) || cycleWeeks < 1 || cycleWeeks > 52) {
+    return { cycleWeeks: 1, error: 'Ciclo inválido na determinação: o número de semanas deve ficar entre 1 e 52.' }
+  }
+  if (startDate && !/^\d{2}\/\d{2}\/\d{4}$/.test(startDate)) {
+    return { cycleWeeks, error: 'Início da determinação inválido: use o formato DD/MM/AAAA.' }
+  }
+  if (cycleWeeks > 1 && !startDate) {
+    return { cycleWeeks, error: `Essa determinação descreve um ciclo de ${cycleWeeks} semanas. Informe o início da determinação (primeiro dia da semana 1).` }
+  }
+  return { startDate: startDate || undefined, cycleWeeks }
 }

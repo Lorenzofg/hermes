@@ -201,6 +201,16 @@
           class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
         />
 
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Início da determinação</label>
+          <input
+            v-model="addPeriodStartDate"
+            type="date"
+            class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          />
+          <p class="text-[11px] text-zinc-500">Primeiro dia da semana 1 — obrigatório quando a jornada se repete em ciclo.</p>
+        </div>
+
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <ProviderPicker v-model="provider" :providers="providers" />
           <div class="flex gap-2">
@@ -344,6 +354,7 @@ const showPresume = ref(false)
 const daysBeforePresume = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
 const showAddPeriod = ref(false)
 const addPeriodText = ref('')
+const addPeriodStartDate = ref('')
 const daysBeforeAddPeriod = ref<{ days: DayEntry[]; warnings: string[] } | null>(null)
 const missing = computed(() => missingMonths(result.value?.warnings ?? []))
 
@@ -408,12 +419,12 @@ async function runAdjustment() {
 }
 
 // Fills the months the defendant never attached; persisted only on "Salvar alterações".
-async function runPresume(months: string[], text: string) {
+async function runPresume(months: string[], text: string, startDate: string) {
   if (!result.value) return
   const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...result.value.warnings] }
   notice.value = null
   busy.value = 'Presumindo os meses faltantes…'
-  const presumed = await presumeMissing(editableDays.value, months, text, provider.value).finally(() => { busy.value = null })
+  const presumed = await presumeMissing(editableDays.value, months, text, provider.value, startDate).finally(() => { busy.value = null })
   if (!presumed) return
 
   daysBeforePresume.value = snapshot
@@ -438,7 +449,7 @@ async function runAddPeriod() {
   const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...result.value.warnings] }
   notice.value = null
   busy.value = 'Acrescentando o período…'
-  const added = await addPeriod(editableDays.value, addPeriodText.value, provider.value).finally(() => { busy.value = null })
+  const added = await addPeriod(editableDays.value, addPeriodText.value, provider.value, addPeriodStartDate.value ? toBRDate(addPeriodStartDate.value) : '').finally(() => { busy.value = null })
   if (!added) return
 
   daysBeforeAddPeriod.value = snapshot

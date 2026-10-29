@@ -444,11 +444,11 @@ async function runAdjustment() {
 }
 
 // Fills the months the defendant never attached; snapshot allows one-click undo.
-async function runPresume(months: string[], text: string) {
+async function runPresume(months: string[], text: string, startDate: string) {
   const snapshot = { days: JSON.parse(JSON.stringify(editableDays.value)) as DayEntry[], warnings: [...warnings.value] }
   notice.value = null
   busy.value = 'Presumindo os meses faltantes…'
-  const result = await presumeMissing(editableDays.value, months, text, provider.value).finally(() => { busy.value = null })
+  const result = await presumeMissing(editableDays.value, months, text, provider.value, startDate).finally(() => { busy.value = null })
   if (!result) return
 
   daysBeforePresume.value = snapshot

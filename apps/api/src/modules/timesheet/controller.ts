@@ -3,7 +3,7 @@ import { processTimesheet } from './processor.js'
 import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis, listVersions, restoreVersion, getVersionSnapshot } from './service.js'
 import { runChat, type ChatMessage } from './chat.js'
 import { generatePresumedDays } from './presumed.js'
-import { applyAdjustment, type Adjustment } from './adjust.js'
+import { applyAdjustment, resolveCycle, type Adjustment } from './adjust.js'
 import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
 import { ADJUSTMENT_PROMPT } from './adjust-prompt.js'
 import { fillMissingMonths, type PresumedSchedule } from './presume-missing.js'
@@ -16,6 +16,11 @@ import { requireAuth } from '../../shared/auth.js'
 import { readUpload } from '../../shared/upload.js'
 import { getCredentials } from '../settings/service.js'
 import type { AnalyzeTimesheetResponse, DayEntry, Shift, PageLogEntry, AIProvider } from '@hermes/types'
+
+function isMonday(date: string): boolean {
+  const [dd, mm, yyyy] = date.split('/').map(Number)
+  return new Date(Date.UTC(yyyy, mm - 1, dd)).getUTCDay() === 1
+}
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 
@@ -205,28 +210,12 @@ export async function timesheetController(app: FastifyInstance) {
       }
 
       const { adjustments = [], warnings = [] } = result.data
-      const cycleWeeks = Number(result.data.cycleWeeks ?? 1)
-      const startDate = (request.body.startDate ?? result.data.startDate ?? '').trim()
-      const extraWarnings: string[] = []
+      const cycle = resolveCycle(request.body.startDate ?? result.data.startDate, result.data.cycleWeeks)
+      if (cycle.error) return reply.status(400).send({ error: cycle.error })
 
-      if (!Number.isInteger(cycleWeeks) || cycleWeeks < 1 || cycleWeeks > 52) {
-        return reply.status(400).send({ error: 'Ciclo inválido na determinação: o número de semanas deve ficar entre 1 e 52.' })
-      }
-      if (startDate && !/^\d{2}\/\d{2}\/\d{4}$/.test(startDate)) {
-        return reply.status(400).send({ error: 'Início da determinação inválido: use o formato DD/MM/AAAA.' })
-      }
-      // A multi-week roster is meaningless without an anchor: the same weekday
-      // has different hours in each week of the cycle.
-      if (cycleWeeks > 1 && !startDate) {
-        return reply.status(400).send({
-          error: `Essa determinação descreve um ciclo de ${cycleWeeks} semanas. Informe o início da determinação (primeiro dia da semana 1).`,
-        })
-      }
-      if (startDate) {
-        const [dd, mm, yyyy] = startDate.split('/').map(Number)
-        if (new Date(Date.UTC(yyyy, mm - 1, dd)).getUTCDay() !== 1) {
-          extraWarnings.push(`O início informado (${startDate}) não é segunda-feira; as semanas do ciclo foram contadas a partir dele.`)
-        }
+      const extraWarnings: string[] = []
+      if (cycle.startDate && cycle.cycleWeeks > 1 && !isMonday(cycle.startDate)) {
+        extraWarnings.push(`O início informado (${cycle.startDate}) não é segunda-feira; as semanas do ciclo foram contadas a partir dele.`)
       }
 
       if (adjustments.length === 0 || adjustments.some((a) => !['break', 'breakMinutes', 'setShifts'].includes(a.op))) {
@@ -235,7 +224,7 @@ export async function timesheetController(app: FastifyInstance) {
         })
       }
 
-      const adjusted = applyAdjustment(days, adjustments, dateFrom, dateTo, { startDate: startDate || undefined, cycleWeeks })
+      const adjusted = applyAdjustment(days, adjustments, dateFrom, dateTo, cycle)
 
       return reply.status(200).send({
         days:      adjusted,
@@ -251,7 +240,7 @@ export async function timesheetController(app: FastifyInstance) {
   // attached ("Mês faltante") with the presumed schedule from the judge's
   // determination. The AI only reads the weekly pattern; the days are
   // generated in code and existing ones are never overwritten.
-  app.post<{ Body: { days: DayEntry[]; months: string[]; text: string; provider?: AIProvider } }>(
+  app.post<{ Body: { days: DayEntry[]; months: string[]; text: string; startDate?: string; provider?: AIProvider } }>(
     '/presume-missing',
     { preHandler: requireAuth },
     async (request, reply) => {
@@ -275,7 +264,7 @@ export async function timesheetController(app: FastifyInstance) {
 
       let result
       try {
-        result = await callAIText<{ schedules?: PresumedSchedule[]; warnings?: string[] }>(PRESUME_MISSING_PROMPT, text, provider, credentials)
+        result = await callAIText<{ startDate?: string; cycleWeeks?: number; schedules?: PresumedSchedule[]; warnings?: string[] }>(PRESUME_MISSING_PROMPT, text, provider, credentials)
       } catch (err: any) {
         return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
       }
@@ -286,7 +275,10 @@ export async function timesheetController(app: FastifyInstance) {
         return reply.status(400).send({ error: warnings[0] ?? 'Não foi possível identificar um padrão de jornada no texto informado.' })
       }
 
-      const filled = fillMissingMonths(days, months, schedules)
+      const cycle = resolveCycle(request.body.startDate ?? result.data.startDate, result.data.cycleWeeks ?? Math.max(1, ...schedules.map((s) => s.week ?? 1)))
+      if (cycle.error) return reply.status(400).send({ error: cycle.error })
+
+      const filled = fillMissingMonths(days, months, schedules, cycle)
       return reply.status(200).send({
         days: filled,
         warnings: [...warnings, ...months.map((m) => `Mês presumido: ${m} — jornada presumida pela determinação`)],
@@ -299,7 +291,7 @@ export async function timesheetController(app: FastifyInstance) {
   // states ("acrescente de 15/06/2021 a 30/09/2022 a jornada X"). The AI reads
   // the period and the weekly pattern; the days are generated in code, and
   // days already recorded are never overwritten.
-  app.post<{ Body: { days: DayEntry[]; text: string; provider?: AIProvider } }>(
+  app.post<{ Body: { days: DayEntry[]; text: string; startDate?: string; provider?: AIProvider } }>(
     '/add-period',
     { preHandler: requireAuth },
     async (request, reply) => {
@@ -320,7 +312,7 @@ export async function timesheetController(app: FastifyInstance) {
 
       let result
       try {
-        result = await callAIText<{ dateFrom?: string; dateTo?: string; schedules?: PresumedSchedule[]; warnings?: string[] }>(
+        result = await callAIText<{ dateFrom?: string; dateTo?: string; startDate?: string; cycleWeeks?: number; schedules?: PresumedSchedule[]; warnings?: string[] }>(
           ADD_PERIOD_PROMPT,
           text,
           provider,
@@ -337,7 +329,13 @@ export async function timesheetController(app: FastifyInstance) {
         return reply.status(400).send({ error: warnings[0] ?? 'Não foi possível identificar o período e a jornada no texto informado.' })
       }
 
-      const filled = addPeriodDays(days, dateFrom, dateTo, schedules)
+      const cycle = resolveCycle(
+        request.body.startDate ?? result.data.startDate ?? dateFrom,
+        result.data.cycleWeeks ?? Math.max(1, ...schedules.map((s) => s.week ?? 1)),
+      )
+      if (cycle.error) return reply.status(400).send({ error: cycle.error })
+
+      const filled = addPeriodDays(days, dateFrom, dateTo, schedules, cycle)
       return reply.status(200).send({
         days: filled,
         warnings: [...warnings, `Período presumido: ${dateFrom} a ${dateTo} — jornada presumida pela determinação`],

@@ -22,6 +22,16 @@
       class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
     />
 
+    <div class="space-y-1.5">
+      <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Início da determinação</label>
+      <input
+        v-model="startDate"
+        type="date"
+        class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+      />
+      <p class="text-[11px] text-zinc-500">Primeiro dia da semana 1 — obrigatório quando a jornada se repete em ciclo (turno de revezamento).</p>
+    </div>
+
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <ProviderPicker :model-value="provider" :providers="providers" @update:model-value="$emit('update:provider', $event)" />
       <div class="flex gap-2">
@@ -36,7 +46,7 @@
           :disabled="!canApply"
           class="px-4 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap"
           :class="canApply ? 'bg-white text-zinc-900 hover:bg-zinc-100' : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'"
-          @click="$emit('apply', selected, text)"
+          @click="$emit('apply', selected, text, startDate ? toBRDate(startDate) : '')"
         >
           {{ loading ? 'Presumindo...' : 'Presumir' }}
         </button>
@@ -59,12 +69,18 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  (e: 'apply', months: string[], text: string): void
+  (e: 'apply', months: string[], text: string, startDate: string): void
   (e: 'undo'): void
   (e: 'update:provider', value: AIProvider): void
 }>()
 
 const text = ref('')
+const startDate = ref('')
+
+function toBRDate(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
 const selected = ref<string[]>([...props.months])
 // all missing months start checked; keep the selection in sync after a fill or undo
 watch(() => props.months, (m) => { selected.value = [...m] })

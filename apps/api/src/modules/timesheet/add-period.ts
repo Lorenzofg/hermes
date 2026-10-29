@@ -1,5 +1,6 @@
 import type { DayEntry } from '@hermes/types'
 import type { PresumedSchedule } from './presume-missing.js'
+import { dateKey, weekOfCycle, expandShifts, type CycleOptions } from './adjust.js'
 
 function parseBRDate(s: string): Date | null {
   const [dd, mm, yyyy] = s.split('/').map(Number)
@@ -14,9 +15,16 @@ function formatBRDate(d: Date): string {
 /**
  * Adds every day of [dateFrom, dateTo] that the presumed schedules cover and
  * the table doesn't already punch — days already recorded are kept as they
- * are, the period is only completed.
+ * are, the period is only completed. With a cycle, each date uses the
+ * schedule of its week (turno de revezamento).
  */
-export function addPeriodDays(days: DayEntry[], dateFrom: string, dateTo: string, schedules: PresumedSchedule[]): DayEntry[] {
+export function addPeriodDays(
+  days: DayEntry[],
+  dateFrom: string,
+  dateTo: string,
+  schedules: PresumedSchedule[],
+  cycle?: CycleOptions,
+): DayEntry[] {
   const from = parseBRDate(dateFrom)
   const to = parseBRDate(dateTo)
   if (!from || !to || from > to) return days
@@ -24,12 +32,15 @@ export function addPeriodDays(days: DayEntry[], dateFrom: string, dateTo: string
   const hasPunch = (d: DayEntry) => d.shifts.some((s) => s.clockIn || s.clockOut)
   const present = new Set(days.filter(hasPunch).map((d) => d.date))
   const added: DayEntry[] = []
+  const weeks = cycle?.cycleWeeks ?? 1
+  const start = cycle?.startDate ? dateKey(cycle.startDate) : null
 
   for (const d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
     const date = formatBRDate(d)
-    const schedule = schedules.find((s) => s.weekdays.includes(d.getDay()))
+    const week = start === null ? 1 : weekOfCycle(dateKey(date), start, weeks)
+    const schedule = schedules.find((s) => (!s.week || s.week === week) && s.weekdays.includes(d.getDay()))
     if (!schedule || present.has(date)) continue
-    added.push({ date, shifts: schedule.shifts.map((s) => ({ ...s })) })
+    added.push({ date, shifts: expandShifts(schedule.shifts) })
   }
 
   const replaced = new Set(added.map((d) => d.date))

@@ -9,10 +9,10 @@ Responda SEMPRE apenas com JSON válido, sem markdown:
 Ações disponíveis:
 - {"op":"adjust","text":"<trecho da determinação colado pela usuária>","startDate":"DD/MM/AAAA","dateFrom":"DD/MM/AAAA","dateTo":"DD/MM/AAAA"}
   Aplica uma determinação sobre os dias já lançados (intervalo, turno de revezamento). startDate é o primeiro dia da semana 1 do ciclo, obrigatório se a determinação tiver mais de uma semana; dateFrom/dateTo limitam o período e são opcionais.
-- {"op":"add-period","text":"<trecho da determinação>"}
-  Acrescenta um período que a própria determinação informa, com a jornada que ela descreve.
-- {"op":"presume-missing","text":"<trecho da determinação>","months":["MM/AAAA"]}
-  Preenche meses faltantes com a jornada presumida.
+- {"op":"add-period","text":"<trecho da determinação>","startDate":"DD/MM/AAAA"}
+  Acrescenta um período que a própria determinação informa, com a jornada que ela descreve. startDate é o primeiro dia da semana 1 quando a jornada se repete em ciclo; opcional fora de ciclo.
+- {"op":"presume-missing","text":"<trecho da determinação>","months":["MM/AAAA"],"startDate":"DD/MM/AAAA"}
+  Preenche meses faltantes com a jornada presumida. startDate vale quando a jornada é um ciclo de várias semanas.
 - {"op":"set-day","date":"DD/MM/AAAA","shifts":[{"clockIn":"HH:mm","clockOut":"HH:mm"}]}
   Edição pontual de um único dia.
 - {"op":"restore-version","version":3}
