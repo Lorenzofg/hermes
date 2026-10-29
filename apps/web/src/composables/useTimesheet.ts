@@ -143,13 +143,15 @@ export function useTimesheet() {
   }
 
   // Applies a judge's determination over days already on the review table —
-  // e.g. the card shows a 12h–14h break but the judge ordered 12h–13h.
+  // e.g. the card shows a 12h–14h break but the judge ordered 12h–13h, or a
+  // turno de revezamento that repeats every N weeks starting on startDate.
   async function adjustDays(
     days: DayEntry[],
     text: string,
     dateFrom: string,
     dateTo: string,
     provider: AIProvider,
+    startDate?: string,
   ): Promise<{ days: DayEntry[]; warnings: string[]; usage: { inputTokens: number; outputTokens: number } } | null> {
     loading.value = true
     error.value = null
@@ -160,6 +162,7 @@ export function useTimesheet() {
         text,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
+        startDate: startDate || undefined,
         provider,
       })
       return data

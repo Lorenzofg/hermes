@@ -60,7 +60,7 @@
     <template v-else>
       <section v-if="showAdjust" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <p class="text-xs text-zinc-500">
-          Cole o trecho da decisão que altera o que foi registrado — por exemplo, um intervalo de 1h no lugar das 2h marcadas. Os horários são extraídos do texto e aplicados aos dias da tabela; o período é opcional (vazio = todos os dias).
+          Cole o trecho da decisão que altera o que foi registrado — por exemplo, um intervalo de 1h no lugar das 2h marcadas, ou uma jornada em turno de revezamento que se repete a cada N semanas. Os horários são extraídos do texto e aplicados aos dias da tabela; o período é opcional (vazio = todos os dias).
         </p>
 
         <textarea
@@ -70,7 +70,16 @@
           class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 placeholder-zinc-500"
         />
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Início da determinação</label>
+            <input
+              v-model="adjustStartDate"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+            <p class="text-[11px] text-zinc-500">Primeiro dia da semana 1 — obrigatório em turno de revezamento.</p>
+          </div>
           <div class="space-y-1.5">
             <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">De (opcional)</label>
             <input
@@ -216,6 +225,7 @@ const pageErrors = computed(() => result.value?.pageLog.filter((p) => p.status =
 const provider = ref<AIProvider>('claude')
 const showAdjust = ref(false)
 const adjustText = ref('')
+const adjustStartDate = ref('')
 const adjustDateFrom = ref('')
 const adjustDateTo = ref('')
 const daysBeforeAdjust = ref<DayEntry[] | null>(null)
@@ -274,6 +284,7 @@ async function runAdjustment() {
     adjustDateFrom.value ? toBRDate(adjustDateFrom.value) : '',
     adjustDateTo.value ? toBRDate(adjustDateTo.value) : '',
     provider.value,
+    adjustStartDate.value ? toBRDate(adjustStartDate.value) : '',
   ).finally(() => { busy.value = null })
   if (!adjusted) return
 

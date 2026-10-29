@@ -175,7 +175,7 @@ export async function timesheetController(app: FastifyInstance) {
   // POST /api/timesheet/adjust-preview — applies a judge's determination over
   // days already on the table ("o intervalo foi de 1h, não de 2h"). The AI only
   // reads WHICH adjustment was determined; the arithmetic is done in code.
-  app.post<{ Body: { days: DayEntry[]; text: string; dateFrom?: string; dateTo?: string; provider?: AIProvider } }>(
+  app.post<{ Body: { days: DayEntry[]; text: string; dateFrom?: string; dateTo?: string; startDate?: string; provider?: AIProvider } }>(
     '/adjust-preview',
     { preHandler: requireAuth },
     async (request, reply) => {
@@ -198,25 +198,49 @@ export async function timesheetController(app: FastifyInstance) {
       // adjustment — rejected below, as is any entry with an unknown op.
       let result
       try {
-        result = await callAIText<{ adjustments?: Adjustment[]; warnings?: string[] }>(ADJUSTMENT_PROMPT, text, provider, credentials)
+        result = await callAIText<{ startDate?: string; cycleWeeks?: number; adjustments?: Adjustment[]; warnings?: string[] }>(ADJUSTMENT_PROMPT, text, provider, credentials)
       } catch (err: any) {
         return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
       }
 
       const { adjustments = [], warnings = [] } = result.data
+      const cycleWeeks = Number(result.data.cycleWeeks ?? 1)
+      const startDate = (request.body.startDate ?? result.data.startDate ?? '').trim()
+      const extraWarnings: string[] = []
+
+      if (!Number.isInteger(cycleWeeks) || cycleWeeks < 1 || cycleWeeks > 52) {
+        return reply.status(400).send({ error: 'Ciclo inválido na determinação: o número de semanas deve ficar entre 1 e 52.' })
+      }
+      if (startDate && !/^\d{2}\/\d{2}\/\d{4}$/.test(startDate)) {
+        return reply.status(400).send({ error: 'Início da determinação inválido: use o formato DD/MM/AAAA.' })
+      }
+      // A multi-week roster is meaningless without an anchor: the same weekday
+      // has different hours in each week of the cycle.
+      if (cycleWeeks > 1 && !startDate) {
+        return reply.status(400).send({
+          error: `Essa determinação descreve um ciclo de ${cycleWeeks} semanas. Informe o início da determinação (primeiro dia da semana 1).`,
+        })
+      }
+      if (startDate) {
+        const [dd, mm, yyyy] = startDate.split('/').map(Number)
+        if (new Date(Date.UTC(yyyy, mm - 1, dd)).getUTCDay() !== 1) {
+          extraWarnings.push(`O início informado (${startDate}) não é segunda-feira; as semanas do ciclo foram contadas a partir dele.`)
+        }
+      }
+
       if (adjustments.length === 0 || adjustments.some((a) => !['break', 'breakMinutes', 'setShifts'].includes(a.op))) {
         return reply.status(400).send({
           error: warnings[0] ?? 'Não foi possível identificar um ajuste aplicável no texto informado.',
         })
       }
 
-      const adjusted = applyAdjustment(days, adjustments, dateFrom, dateTo)
+      const adjusted = applyAdjustment(days, adjustments, dateFrom, dateTo, { startDate: startDate || undefined, cycleWeeks })
 
       return reply.status(200).send({
         days:      adjusted,
         csvContent: generateCsv(adjusted),
         totalDays: adjusted.length,
-        warnings,
+        warnings:  [...warnings, ...extraWarnings],
         usage:     result.usage,
       })
     },
