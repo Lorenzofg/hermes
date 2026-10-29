@@ -1,6 +1,6 @@
 import { db } from '../../db/index.js'
-import { timesheetAnalyses, timesheetRecords } from './schema.js'
-import { eq, and } from 'drizzle-orm'
+import { timesheetAnalyses, timesheetRecords, timesheetAnalysisVersions } from './schema.js'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import { stringify } from 'csv-stringify/sync'
 import type { DayEntry, AnalyzeTimesheetResponse, PageLogEntry, AIProvider } from '@hermes/types'
 
@@ -52,6 +52,34 @@ interface SaveParams {
   outputTokens: number
 }
 
+// Where a version came from — shown in History so the user knows what changed
+// the table, and used by the chat/restore flows later.
+export type VersionSource = 'scan' | 'manual' | 'restore' | 'adjust' | 'presume' | 'add-period' | 'chat'
+
+// Every mutation writes a full snapshot; restoring a version is just another
+// mutation, so no history is ever lost.
+async function saveVersion(
+  analysisId: number,
+  days: DayEntry[],
+  warnings: string[],
+  csvContent: string,
+  source: VersionSource,
+) {
+  const [row] = await db
+    .select({ latest: sql<number>`coalesce(max(${timesheetAnalysisVersions.version}), 0)` })
+    .from(timesheetAnalysisVersions)
+    .where(eq(timesheetAnalysisVersions.analysisId, analysisId))
+
+  await db.insert(timesheetAnalysisVersions).values({
+    analysisId,
+    version: Number(row?.latest ?? 0) + 1,
+    source,
+    days,
+    warnings,
+    csvContent,
+  })
+}
+
 function dayToRecord(analysisId: number, day: DayEntry) {
   const s = [...day.shifts]
   while (s.length < 6) s.push({ clockIn: '', clockOut: '' })
@@ -79,20 +107,31 @@ export async function saveAnalysis(params: SaveParams) {
     await db.insert(timesheetRecords).values(days.map((day) => dayToRecord(record.id, day)))
   }
 
+  await saveVersion(record.id, days, warnings, csvContent, 'scan')
+
   return record
 }
 
 // Overwrites a saved analysis's days — lets the user fix a wrong row or
 // clear a value in History after the fact, not just during the initial review.
 // Warnings are replaced only when given (adjusting/presuming changes them).
-export async function updateAnalysis(id: number, userId: number, days: DayEntry[], warnings?: string[]) {
+export async function updateAnalysis(
+  id: number,
+  userId: number,
+  days: DayEntry[],
+  warnings?: string[],
+  source: VersionSource = 'manual',
+) {
   const [existing] = await db
-    .select({ id: timesheetAnalyses.id })
+    .select({ id: timesheetAnalyses.id, warnings: timesheetAnalyses.warnings })
     .from(timesheetAnalyses)
     .where(and(eq(timesheetAnalyses.id, id), eq(timesheetAnalyses.userId, userId)))
   if (!existing) return null
 
   const csvContent = generateCsv(days)
+  const nextWarnings = warnings ?? existing.warnings
+
+  await saveVersion(id, days, nextWarnings, csvContent, source)
 
   await db.delete(timesheetRecords).where(eq(timesheetRecords.analysisId, id))
   if (days.length > 0) {
@@ -101,10 +140,62 @@ export async function updateAnalysis(id: number, userId: number, days: DayEntry[
 
   await db
     .update(timesheetAnalyses)
-    .set({ totalDays: days.length, csvContent, ...(warnings ? { warnings } : {}) })
+    .set({ totalDays: days.length, csvContent, warnings: nextWarnings })
     .where(eq(timesheetAnalyses.id, id))
 
   return { csvContent }
+}
+
+export interface AnalysisVersionSummary {
+  version: number
+  source: string
+  totalDays: number
+  createdAt: string
+}
+
+export async function listVersions(id: number, userId: number): Promise<AnalysisVersionSummary[] | null> {
+  const [existing] = await db
+    .select({ id: timesheetAnalyses.id })
+    .from(timesheetAnalyses)
+    .where(and(eq(timesheetAnalyses.id, id), eq(timesheetAnalyses.userId, userId)))
+  if (!existing) return null
+
+  const rows = await db
+    .select({
+      version:   timesheetAnalysisVersions.version,
+      source:    timesheetAnalysisVersions.source,
+      totalDays: sql<number>`jsonb_array_length(${timesheetAnalysisVersions.days})`,
+      createdAt: timesheetAnalysisVersions.createdAt,
+    })
+    .from(timesheetAnalysisVersions)
+    .where(eq(timesheetAnalysisVersions.analysisId, id))
+    .orderBy(desc(timesheetAnalysisVersions.version))
+
+  return rows.map((r) => ({
+    version:   r.version,
+    source:    r.source,
+    totalDays: Number(r.totalDays),
+    createdAt: r.createdAt.toISOString(),
+  }))
+}
+
+export async function restoreVersion(id: number, version: number, userId: number) {
+  const [existing] = await db
+    .select({ id: timesheetAnalyses.id })
+    .from(timesheetAnalyses)
+    .where(and(eq(timesheetAnalyses.id, id), eq(timesheetAnalyses.userId, userId)))
+  if (!existing) return null
+
+  const [snapshot] = await db
+    .select()
+    .from(timesheetAnalysisVersions)
+    .where(and(eq(timesheetAnalysisVersions.analysisId, id), eq(timesheetAnalysisVersions.version, version)))
+  if (!snapshot) return null
+
+  const restored = await updateAnalysis(id, userId, snapshot.days, snapshot.warnings, 'restore')
+  if (!restored) return null
+
+  return { ...restored, days: snapshot.days, warnings: snapshot.warnings }
 }
 
 export async function listAnalyses(userId: number) {

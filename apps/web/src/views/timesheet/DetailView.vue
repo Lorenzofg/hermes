@@ -58,6 +58,44 @@
     <div v-else-if="!result" class="text-sm text-red-400">Análise não encontrada.</div>
 
     <template v-else>
+      <section v-if="versions.length > 0" class="bg-zinc-800 border border-zinc-700 rounded-lg">
+        <button
+          class="w-full flex items-center justify-between px-4 py-3 text-left"
+          @click="showVersions = !showVersions"
+        >
+          <p class="text-xs font-semibold tracking-widest uppercase text-zinc-400">
+            Versões ({{ versions.length }})
+          </p>
+          <span class="text-xs text-zinc-500">{{ showVersions ? '▲' : '▼' }}</span>
+        </button>
+
+        <ul v-if="showVersions" class="border-t border-zinc-700 divide-y divide-zinc-700/60">
+          <li
+            v-for="v in versions"
+            :key="v.version"
+            class="flex items-center justify-between gap-3 px-4 py-2"
+          >
+            <div class="min-w-0">
+              <p class="text-xs text-zinc-300">
+                v{{ v.version }}
+                <span v-if="v.version === versions[0].version" class="text-emerald-400">· atual</span>
+              </p>
+              <p class="text-[11px] text-zinc-500 truncate">
+                {{ sourceLabel(v.source) }} · {{ v.totalDays }} dia{{ v.totalDays === 1 ? '' : 's' }} · {{ formatDate(v.createdAt) }}
+              </p>
+            </div>
+            <button
+              v-if="v.version !== versions[0].version"
+              :disabled="restoring === v.version"
+              class="px-3 py-1 text-xs font-semibold border border-zinc-600 text-zinc-300 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+              @click="restoreVersion(v.version)"
+            >
+              {{ restoring === v.version ? 'Restaurando...' : 'Restaurar' }}
+            </button>
+          </li>
+        </ul>
+      </section>
+
       <section v-if="showAdjust" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <p class="text-xs text-zinc-500">
           Cole o trecho da decisão que altera o que foi registrado — por exemplo, um intervalo de 1h no lugar das 2h marcadas, ou uma jornada em turno de revezamento que se repete a cada N semanas. Os horários são extraídos do texto e aplicados aos dias da tabela; o período é opcional (vazio = todos os dias).
@@ -222,6 +260,63 @@ const editableDays = ref<DayEntry[]>([])
 const loading = ref(true)
 const pageErrors = computed(() => result.value?.pageLog.filter((p) => p.status === 'error') ?? [])
 
+interface AnalysisVersion { version: number; source: string; totalDays: number; createdAt: string }
+
+const versions = ref<AnalysisVersion[]>([])
+const showVersions = ref(true)
+const restoring = ref<number | null>(null)
+
+const SOURCE_LABEL: Record<string, string> = {
+  scan:        'Leitura inicial',
+  manual:      'Edição manual',
+  restore:     'Restauração',
+  adjust:      'Ajuste pela determinação',
+  presume:     'Presunção de meses',
+  'add-period': 'Período acrescentado',
+  chat:        'Chat',
+}
+
+function sourceLabel(source: string): string {
+  return SOURCE_LABEL[source] ?? source
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).replace(',', '')
+}
+
+async function loadVersions() {
+  try {
+    const { data } = await axios.get<AnalysisVersion[]>(`/api/timesheet/analyses/${route.params.id}/versions`)
+    versions.value = data
+  } catch {
+    versions.value = []
+  }
+}
+
+async function restoreVersion(version: number) {
+  if (!result.value) return
+  restoring.value = version
+  try {
+    const { data } = await axios.post<{ days: DayEntry[]; warnings: string[]; csvContent: string }>(
+      `/api/timesheet/analyses/${route.params.id}/versions/${version}/restore`,
+    )
+    editableDays.value = sortByDate(data.days)
+    result.value = { ...result.value, days: data.days, warnings: data.warnings, csvContent: data.csvContent, totalDays: data.days.length }
+    notice.value = `Versão ${version} restaurada.`
+    await loadVersions()
+  } catch (e) {
+    notice.value = axios.isAxiosError(e)
+      ? (e.response?.data?.error ?? 'Falha ao restaurar a versão.')
+      : 'Erro inesperado ao restaurar a versão.'
+  } finally {
+    restoring.value = null
+  }
+}
+
 const provider = ref<AIProvider>('claude')
 const showAdjust = ref(false)
 const adjustText = ref('')
@@ -253,6 +348,7 @@ onMounted(async () => {
     const { data } = await axios.get<AnalyzeTimesheetResponse>(`/api/timesheet/analyses/${route.params.id}`)
     result.value = { ...data, days: sortByDate(data.days) }
     editableDays.value = result.value.days
+    await loadVersions()
   } catch {
     result.value = null
   } finally {
@@ -357,5 +453,6 @@ async function handleSave() {
   if (!updated || !result.value) return
   result.value = { ...result.value, days: editableDays.value, csvContent: updated.csvContent, totalDays: editableDays.value.length }
   notice.value = 'Alterações salvas.'
+  await loadVersions()
 }
 </script>

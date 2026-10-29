@@ -2,7 +2,7 @@ import { pgTable, serial, text, integer, timestamp, bigint, jsonb } from 'drizzl
 import { sql } from 'drizzle-orm'
 import { providerEnum } from '../../db/enums.js'
 import { users } from '../auth/schema.js'
-import type { PageLogEntry } from '@hermes/types'
+import type { PageLogEntry, DayEntry } from '@hermes/types'
 
 export const timesheetAnalyses = pgTable('timesheet_analyses', {
   id:           serial('id').primaryKey(),
@@ -35,6 +35,22 @@ export const timesheetRecords = pgTable('timesheet_records', {
   clockIn6:  text('clock_in_6').notNull().default(''),
   clockOut6: text('clock_out_6').notNull().default(''),
 })
+
+// Full snapshot of an analysis after each change, so any edit can be undone
+// from History. Days are kept as JSON: a version must restore exactly what the
+// table showed, independently of the record columns.
+export const timesheetAnalysisVersions = pgTable('timesheet_analysis_versions', {
+  id:         serial('id').primaryKey(),
+  analysisId: integer('analysis_id').notNull().references(() => timesheetAnalyses.id, { onDelete: 'cascade' }),
+  version:    integer('version').notNull(),
+  source:     text('source').notNull(),
+  days:       jsonb('days').$type<DayEntry[]>().notNull(),
+  warnings:   text('warnings').array().notNull().default(sql`'{}'`),
+  csvContent: text('csv_content').notNull(),
+  createdAt:  timestamp('created_at').defaultNow().notNull(),
+})
+
+export type TimesheetAnalysisVersion = typeof timesheetAnalysisVersions.$inferSelect
 
 export type TimesheetAnalysis    = typeof timesheetAnalyses.$inferSelect
 export type NewTimesheetAnalysis = typeof timesheetAnalyses.$inferInsert

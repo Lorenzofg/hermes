@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { processTimesheet } from './processor.js'
-import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis } from './service.js'
+import { generateCsv, saveAnalysis, updateAnalysis, listAnalyses, getAnalysis, listVersions, restoreVersion } from './service.js'
 import { generatePresumedDays } from './presumed.js'
 import { applyAdjustment, type Adjustment } from './adjust.js'
 import { PRESUMED_SCHEDULE_PROMPT } from './presumed-prompt.js'
@@ -423,4 +423,33 @@ export async function timesheetController(app: FastifyInstance) {
       .header('Content-Disposition', `attachment; filename="timesheet_${id}_pjecalc.csv"`)
       .send(analysis.csvContent)
   })
+
+  // GET /api/timesheet/analyses/:id/versions — every snapshot of an analysis,
+  // newest first, so History can show what each change did.
+  app.get<{ Params: { id: string } }>('/analyses/:id/versions', { preHandler: requireAuth }, async (request, reply) => {
+    const id = Number(request.params.id)
+    if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido.' })
+
+    const versions = await listVersions(id, request.user.id)
+    if (!versions) return reply.status(404).send({ error: 'Análise não encontrada.' })
+
+    return reply.send(versions)
+  })
+
+  // POST /api/timesheet/analyses/:id/versions/:version/restore — puts the days
+  // of an old version back, as a new version (nothing is lost).
+  app.post<{ Params: { id: string; version: string } }>(
+    '/analyses/:id/versions/:version/restore',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const id = Number(request.params.id)
+      const version = Number(request.params.version)
+      if (isNaN(id) || isNaN(version)) return reply.status(400).send({ error: 'ID ou versão inválidos.' })
+
+      const restored = await restoreVersion(id, version, request.user.id)
+      if (!restored) return reply.status(404).send({ error: 'Análise ou versão não encontrada.' })
+
+      return reply.send(restored)
+    },
+  )
 }
