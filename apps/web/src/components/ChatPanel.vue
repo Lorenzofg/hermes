@@ -3,10 +3,14 @@
        working copy the table shows; saving stays an explicit action. -->
   <button
     v-if="!open"
-    class="fixed bottom-6 right-6 z-20 px-4 py-3 rounded-full bg-white text-zinc-900 text-xs font-semibold uppercase tracking-wide shadow-lg hover:bg-zinc-100 transition-colors"
+    class="fixed bottom-6 right-6 z-20 w-14 h-14 rounded-full bg-white text-zinc-900 shadow-xl ring-1 ring-black/10 flex items-center justify-center hover:scale-105 hover:bg-zinc-100 active:scale-95 transition-transform"
+    aria-label="Abrir o assistente"
+    title="Assistente"
     @click="open = true"
   >
-    Chat
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
   </button>
 
   <aside
