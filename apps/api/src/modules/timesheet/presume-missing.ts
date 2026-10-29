@@ -28,6 +28,7 @@ function pickSchedule(schedules: PresumedSchedule[], date: Date, dateStr: string
 export function fillMissingMonths(days: DayEntry[], months: string[], schedules: PresumedSchedule[], cycle?: CycleOptions): DayEntry[] {
   const hasPunch = (d: DayEntry) => d.shifts.some((s) => s.clockIn || s.clockOut)
   const present = new Set(days.filter(hasPunch).map((d) => d.date))
+  const blankRestDays = !!cycle?.startDate && (cycle?.cycleWeeks ?? 1) > 1
   const added: DayEntry[] = []
 
   for (const month of months) {
@@ -36,7 +37,11 @@ export function fillMissingMonths(days: DayEntry[], months: string[], schedules:
     for (const d = new Date(yyyy, mm - 1, 1); d.getMonth() === mm - 1; d.setDate(d.getDate() + 1)) {
       const date = formatBRDate(d)
       const schedule = pickSchedule(schedules, d, date, cycle)
-      if (!schedule || present.has(date)) continue
+      if (present.has(date)) continue
+      if (!schedule) {
+        if (blankRestDays) added.push({ date, shifts: [] })
+        continue
+      }
       added.push({ date, shifts: expandShifts(schedule.shifts) })
     }
   }

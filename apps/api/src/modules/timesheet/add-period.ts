@@ -34,12 +34,17 @@ export function addPeriodDays(
   const added: DayEntry[] = []
   const weeks = cycle?.cycleWeeks ?? 1
   const start = cycle?.startDate ? dateKey(cycle.startDate) : null
+  const blankRestDays = start !== null && weeks > 1
 
   for (const d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
     const date = formatBRDate(d)
     const week = start === null ? 1 : weekOfCycle(dateKey(date), start, weeks)
     const schedule = schedules.find((s) => (!s.week || s.week === week) && s.weekdays.includes(d.getDay()))
-    if (!schedule || present.has(date)) continue
+    if (present.has(date)) continue
+    if (!schedule) {
+      if (blankRestDays) added.push({ date, shifts: [] })
+      continue
+    }
     added.push({ date, shifts: expandShifts(schedule.shifts) })
   }
 

@@ -31,13 +31,20 @@ export function generatePresumedDays(
 
   const weeks = cycle?.cycleWeeks ?? 1
   const start = cycle?.startDate ? dateKey(cycle.startDate) : null
+  // In a roster, a date with no schedule inside the cycle is a rest day the
+  // determination imposed — it goes to the table as a blank row. A plain
+  // weekly pattern keeps only the worked days (weekends are just not listed).
+  const blankRestDays = start !== null && weeks > 1
   const days: DayEntry[] = []
 
   for (const d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
     const date = formatBRDate(d)
     const week = start === null ? 1 : weekOfCycle(dateKey(date), start, weeks)
     const schedule = schedules.find((s) => (!s.week || s.week === week) && s.weekdays.includes(d.getDay()))
-    if (!schedule) continue
+    if (!schedule) {
+      if (blankRestDays) days.push({ date, shifts: [] })
+      continue
+    }
     days.push({ date, shifts: expandShifts(schedule.shifts) })
   }
 
