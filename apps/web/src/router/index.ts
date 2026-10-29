@@ -9,7 +9,7 @@ const routes = [
   { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
 
   { path: '/timesheet',     name: 'timesheet-home',   component: () => import('../views/timesheet/HomeView.vue') },
-  { path: '/timesheet/:id', name: 'timesheet-detail', component: () => import('../views/timesheet/DetailView.vue') },
+  { path: '/timesheet/:id', name: 'timesheet-detail', component: () => import('../views/timesheet/DetailView.vue'), meta: { wide: true } },
 
   { path: '/timesheet-batch',     name: 'timesheet-batch',        component: () => import('../views/timesheet-batch/HomeView.vue') },
   { path: '/timesheet-batch/:id', name: 'timesheet-batch-detail', component: () => import('../views/timesheet-batch/DetailView.vue') },

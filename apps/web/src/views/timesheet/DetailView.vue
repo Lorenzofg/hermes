@@ -58,6 +58,8 @@
     <div v-else-if="!result" class="text-sm text-red-400">Análise não encontrada.</div>
 
     <template v-else>
+      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <aside class="space-y-4 xl:col-start-2 xl:row-start-1 xl:sticky xl:top-24 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pr-1">
       <section v-if="versions.length > 0" class="bg-zinc-800 border border-zinc-700 rounded-lg">
         <button
           class="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -95,6 +97,22 @@
           </li>
         </ul>
       </section>
+
+      <CollapsibleBox v-if="result.warnings.length" variant="amber">
+        <template #title>Avisos ({{ result.warnings.length }})</template>
+        <WarningGroups :warnings="result.warnings" />
+      </CollapsibleBox>
+
+      <CollapsibleBox v-if="pageErrors.length" variant="red">
+        <template #title>Erros de Página ({{ pageErrors.length }} de {{ result.pageLog.length }} páginas)</template>
+        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
+          <p class="font-semibold">Página {{ e.page }}</p>
+          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
+        </div>
+      </CollapsibleBox>
+        </aside>
+
+        <div class="space-y-4 min-w-0 xl:col-start-1 xl:row-start-1">
 
       <section v-if="showAdjust" class="bg-zinc-800 border border-zinc-700 rounded-lg p-6 space-y-4">
         <p class="text-xs text-zinc-500">
@@ -216,20 +234,9 @@
         {{ error }}
       </div>
 
-      <CollapsibleBox v-if="result.warnings.length" variant="amber">
-        <template #title>Avisos ({{ result.warnings.length }})</template>
-        <WarningGroups :warnings="result.warnings" />
-      </CollapsibleBox>
-
-      <CollapsibleBox v-if="pageErrors.length" variant="red">
-        <template #title>Erros de Página ({{ pageErrors.length }} de {{ result.pageLog.length }} páginas)</template>
-        <div v-for="e in pageErrors" :key="e.page" class="text-sm text-red-300">
-          <p class="font-semibold">Página {{ e.page }}</p>
-          <p class="text-xs text-red-400/80 whitespace-pre-wrap break-words">{{ e.detail }}</p>
-        </div>
-      </CollapsibleBox>
-
       <EditableTable v-model:days="editableDays" />
+        </div>
+      </div>
     </template>
 
     <ChatPanel
