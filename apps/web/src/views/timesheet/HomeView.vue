@@ -71,7 +71,15 @@
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">Início da determinação</label>
+            <input
+              v-model="presumedStartDate"
+              type="date"
+              class="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
           <div class="space-y-1.5">
             <label class="text-xs font-medium tracking-wide uppercase text-zinc-500">De</label>
             <input
@@ -325,6 +333,7 @@ const provider = ref<AIProvider>('claude')
 const presumedText = ref('')
 const presumedDateFrom = ref('')
 const presumedDateTo = ref('')
+const presumedStartDate = ref('')
 const canGeneratePresumed = computed(() => !!presumedText.value.trim() && !!presumedDateFrom.value && !!presumedDateTo.value)
 
 // Default to whichever provider the user has actually configured, rather
@@ -400,6 +409,7 @@ async function runPresumedAnalysis() {
     toBRDate(presumedDateFrom.value),
     toBRDate(presumedDateTo.value),
     provider.value,
+    presumedStartDate.value ? toBRDate(presumedStartDate.value) : '',
   )
   if (!result) return
 
@@ -508,6 +518,7 @@ function reset() {
   presumedText.value = ''
   presumedDateFrom.value = ''
   presumedDateTo.value = ''
+  presumedStartDate.value = ''
   editableDays.value = []
   showAdjust.value = false
   adjustText.value = ''

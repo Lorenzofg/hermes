@@ -119,7 +119,7 @@ export async function timesheetController(app: FastifyInstance) {
   // (days + hours) for a period without real timesheet records, extracts
   // that pattern with the AI and expands it into day entries across a
   // manually-chosen date range.
-  app.post<{ Body: { text: string; dateFrom: string; dateTo: string; provider?: AIProvider } }>(
+  app.post<{ Body: { text: string; dateFrom: string; dateTo: string; startDate?: string; provider?: AIProvider } }>(
     '/presumed-preview',
     { preHandler: requireAuth },
     async (request, reply) => {
@@ -138,40 +138,41 @@ export async function timesheetController(app: FastifyInstance) {
         return reply.status(400).send({ error: `Configure sua chave de API e o modelo do ${provider} em Configurações primeiro.` })
       }
 
-      let workDays: string[]
-      let shifts: Shift[]
-      let warnings: string[]
-      let usage: { inputTokens: number; outputTokens: number }
+      let result
       try {
-        const result = await callAIText<{ workDays?: string[]; shifts?: Shift[]; warnings?: string[] }>(
+        result = await callAIText<{ startDate?: string; cycleWeeks?: number; schedules?: PresumedSchedule[]; warnings?: string[] }>(
           PRESUMED_SCHEDULE_PROMPT,
           text,
           provider,
           credentials,
         )
-        workDays = result.data.workDays ?? []
-        shifts   = result.data.shifts ?? []
-        warnings = result.data.warnings ?? []
-        usage    = result.usage
       } catch (err: any) {
         return reply.status(400).send({ error: err?.message ?? 'Falha ao interpretar a determinação.' })
       }
 
-      if (workDays.length === 0 || shifts.length === 0) {
-        return reply.status(400).send({ error: 'Não foi possível identificar um padrão de jornada no texto informado.' })
+      const schedules = (result.data.schedules ?? []).filter((s) => s.weekdays?.length && s.shifts?.length)
+      const warnings = result.data.warnings ?? []
+      if (schedules.length === 0) {
+        return reply.status(400).send({ error: warnings[0] ?? 'Não foi possível identificar um padrão de jornada no texto informado.' })
       }
 
-      const days = generatePresumedDays(workDays, shifts, dateFrom, dateTo)
+      const cycle = resolveCycle(
+        request.body.startDate ?? result.data.startDate,
+        result.data.cycleWeeks ?? Math.max(1, ...schedules.map((s) => s.week ?? 1)),
+      )
+      if (cycle.error) return reply.status(400).send({ error: cycle.error })
+
+      const days = generatePresumedDays(schedules, dateFrom, dateTo, cycle)
       const csvContent = generateCsv(days)
 
-      const response: AnalyzeTimesheetResponse & { fileName: string; usage: typeof usage } = {
+      const response: AnalyzeTimesheetResponse & { fileName: string; usage: typeof result.usage } = {
         days,
         csvContent,
         totalDays: days.length,
         warnings,
         pageLog: [],
         fileName: `Jornada Presumida ${dateFrom}-${dateTo}`,
-        usage,
+        usage: result.usage,
       }
 
       return reply.status(200).send(response)

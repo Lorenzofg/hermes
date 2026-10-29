@@ -79,12 +79,13 @@ export function useTimesheet() {
     dateFrom: string,
     dateTo: string,
     provider: AIProvider,
+    startDate?: string,
   ): Promise<(AnalyzeTimesheetResponse & { fileName: string; usage: { inputTokens: number; outputTokens: number } }) | null> {
     loading.value = true
     error.value = null
 
     try {
-      const { data } = await axios.post('/api/timesheet/presumed-preview', { text, dateFrom, dateTo, provider })
+      const { data } = await axios.post('/api/timesheet/presumed-preview', { text, dateFrom, dateTo, provider, startDate: startDate || undefined })
       return data
     } catch (e: unknown) {
       error.value = axios.isAxiosError(e)
